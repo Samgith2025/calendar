@@ -15,6 +15,7 @@ export default {
     red: '#ef4444',
     grey: '#d1d5db',
     greyLight: '#e5e7eb',
+    blue: '#3b82f6',
   },
   dark: {
     text: '#f9fafb',
@@ -29,6 +30,7 @@ export default {
     red: '#ef4444',
     grey: '#4b5563',
     greyLight: '#374151',
+    blue: '#3b82f6',
   },
 };
 

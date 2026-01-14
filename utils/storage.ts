@@ -40,7 +40,19 @@ export async function getAppData(): Promise<AppData> {
   try {
     const data = await AsyncStorage.getItem(STORAGE_KEYS.APP_DATA);
     if (data) {
-      return JSON.parse(data);
+      const parsed = JSON.parse(data);
+      // Dedupe rules by ID (fix for duplicate key bug)
+      if (parsed.rules && Array.isArray(parsed.rules)) {
+        const seen = new Set<string>();
+        parsed.rules = parsed.rules.filter((rule: Rule) => {
+          if (seen.has(rule.id)) {
+            return false;
+          }
+          seen.add(rule.id);
+          return true;
+        });
+      }
+      return parsed;
     }
     return DEFAULT_APP_DATA;
   } catch (error) {
@@ -71,10 +83,14 @@ export async function saveRules(rules: Rule[]): Promise<void> {
   await saveAppData(data);
 }
 
+function generateUniqueId(): string {
+  return `${Date.now()}-${Math.random().toString(36).substring(2, 11)}`;
+}
+
 export async function addRule(text: string): Promise<Rule> {
   const data = await getAppData();
   const newRule: Rule = {
-    id: Date.now().toString(),
+    id: generateUniqueId(),
     text,
     createdAt: new Date().toISOString(),
   };

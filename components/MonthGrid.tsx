@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet, Pressable } from 'react-native';
+import { View, Text, StyleSheet } from 'react-native';
 import { useApp } from '@/context/AppContext';
 import { getMonthGridDays, formatDate, isWeekendDay, isTodayET } from '@/utils/date';
 import Colors, { STATUS_COLORS } from '@/constants/Colors';
@@ -10,10 +10,9 @@ const WEEKDAY_LABELS = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
 
 interface MonthGridProps {
   month: Date;
-  onDayPress?: (date: Date) => void;
 }
 
-export function MonthGrid({ month, onDayPress }: MonthGridProps) {
+export function MonthGrid({ month }: MonthGridProps) {
   const { getDayStatus } = useApp();
   const colorScheme = useColorScheme() ?? 'light';
   const colors = Colors[colorScheme];
@@ -58,18 +57,13 @@ export function MonthGrid({ month, onDayPress }: MonthGridProps) {
           const boxColor = getBoxColor(status, isWeekend);
 
           return (
-            <Pressable
-              key={formatDate(day)}
-              style={styles.dayCell}
-              onPress={() => onDayPress?.(day)}
-              disabled={isWeekend}
-            >
+            <View key={formatDate(day)} style={styles.dayCell}>
               <View
                 style={[
                   styles.dayBox,
                   { backgroundColor: boxColor },
                   isWeekend && styles.weekendBox,
-                  isToday && styles.todayBox,
+                  isToday && [styles.todayBox, { borderColor: colors.blue }],
                 ]}
               >
                 {status === 'green' && !isWeekend && (
@@ -79,16 +73,12 @@ export function MonthGrid({ month, onDayPress }: MonthGridProps) {
                   <Text style={styles.statusIcon}>✗</Text>
                 )}
               </View>
-            </Pressable>
+            </View>
           );
         })}
       </View>
 
       <View style={styles.legend}>
-        <View style={styles.legendItem}>
-          <View style={[styles.legendBox, { backgroundColor: colors.greyLight }]} />
-          <Text style={[styles.legendText, { color: colors.textSecondary }]}>Pending</Text>
-        </View>
         <View style={styles.legendItem}>
           <View style={[styles.legendBox, { backgroundColor: STATUS_COLORS.green }]} />
           <Text style={[styles.legendText, { color: colors.textSecondary }]}>Done</Text>
@@ -96,6 +86,10 @@ export function MonthGrid({ month, onDayPress }: MonthGridProps) {
         <View style={styles.legendItem}>
           <View style={[styles.legendBox, { backgroundColor: STATUS_COLORS.red }]} />
           <Text style={[styles.legendText, { color: colors.textSecondary }]}>Missed</Text>
+        </View>
+        <View style={styles.legendItem}>
+          <View style={[styles.legendBox, { backgroundColor: colors.grey }]} />
+          <Text style={[styles.legendText, { color: colors.textSecondary }]}>No Log</Text>
         </View>
       </View>
     </View>
@@ -140,7 +134,6 @@ const styles = StyleSheet.create({
   },
   todayBox: {
     borderWidth: 2,
-    borderColor: '#3b82f6',
   },
   statusIcon: {
     color: 'white',

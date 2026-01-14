@@ -158,7 +158,7 @@ export default function ProfileScreen() {
                 style={[
                   styles.themeButton,
                   { backgroundColor: colors.background },
-                  widgetSettings.theme === 'light' && styles.themeButtonActive,
+                  widgetSettings.theme === 'light' && { backgroundColor: colors.blue },
                 ]}
                 onPress={() => updateWidgetSettings({ theme: 'light' })}
               >
@@ -166,7 +166,7 @@ export default function ProfileScreen() {
                   style={[
                     styles.themeButtonText,
                     { color: colors.textSecondary },
-                    widgetSettings.theme === 'light' && { color: colors.text },
+                    widgetSettings.theme === 'light' && { color: '#ffffff' },
                   ]}
                 >
                   Light
@@ -176,7 +176,7 @@ export default function ProfileScreen() {
                 style={[
                   styles.themeButton,
                   { backgroundColor: colors.background },
-                  widgetSettings.theme === 'dark' && styles.themeButtonActive,
+                  widgetSettings.theme === 'dark' && { backgroundColor: colors.blue },
                 ]}
                 onPress={() => updateWidgetSettings({ theme: 'dark' })}
               >
@@ -184,7 +184,7 @@ export default function ProfileScreen() {
                   style={[
                     styles.themeButtonText,
                     { color: colors.textSecondary },
-                    widgetSettings.theme === 'dark' && { color: colors.text },
+                    widgetSettings.theme === 'dark' && { color: '#ffffff' },
                   ]}
                 >
                   Dark
@@ -340,7 +340,7 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
   },
   themeButtonActive: {
-    backgroundColor: '#3b82f6',
+    // backgroundColor set dynamically via inline style
   },
   themeButtonText: {
     fontSize: 14,

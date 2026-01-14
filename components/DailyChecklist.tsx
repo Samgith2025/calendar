@@ -88,21 +88,23 @@ export function DailyChecklist() {
 
         {todayLog?.ruleResults && (
           <View style={styles.resultsContainer}>
-            {rules.map((rule) => {
-              const followed = todayLog.ruleResults?.[rule.id];
-              return (
-                <View key={rule.id} style={styles.resultRow}>
-                  <FontAwesome
-                    name={followed ? 'check' : 'times'}
-                    size={16}
-                    color={followed ? colors.green : colors.red}
-                  />
-                  <Text style={[styles.resultText, { color: colors.text }]}>
-                    {rule.text}
-                  </Text>
-                </View>
-              );
-            })}
+            {rules
+              .filter((rule) => todayLog.ruleResults?.[rule.id] !== undefined)
+              .map((rule) => {
+                const followed = todayLog.ruleResults?.[rule.id];
+                return (
+                  <View key={rule.id} style={styles.resultRow}>
+                    <FontAwesome
+                      name={followed ? 'check' : 'times'}
+                      size={16}
+                      color={followed ? colors.green : colors.red}
+                    />
+                    <Text style={[styles.resultText, { color: colors.text }]}>
+                      {rule.text}
+                    </Text>
+                  </View>
+                );
+              })}
           </View>
         )}
       </View>
