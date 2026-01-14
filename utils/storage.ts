@@ -1,10 +1,12 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Platform } from 'react-native';
-import { AppData, DayLog, Rule, WidgetSettings } from '@/types';
+import { AppData, DayLog, Rule, WidgetSettings, AppTheme, NotificationSettings } from '@/types';
 
 const STORAGE_KEYS = {
   APP_DATA: 'trading_tracker_data',
   WIDGET_SETTINGS: 'widget_settings',
+  APP_THEME: 'app_theme',
+  NOTIFICATION_SETTINGS: 'notification_settings',
 };
 
 const APP_GROUP = 'group.com.samson.tradingtracker';
@@ -18,6 +20,13 @@ const DEFAULT_WIDGET_SETTINGS: WidgetSettings = {
   theme: 'dark',
   accentColor: '#22c55e',
   showCompletionIndicator: true,
+};
+
+const DEFAULT_NOTIFICATION_SETTINGS: NotificationSettings = {
+  enabled: false,
+  startTime: '16:00',
+  interval: 15,
+  endTime: '23:00',
 };
 
 // Helper to sync data to App Groups for widget access (iOS only)
@@ -154,6 +163,28 @@ export async function saveWidgetSettings(settings: WidgetSettings): Promise<void
   }
 }
 
+// App theme management
+export async function getAppTheme(): Promise<AppTheme> {
+  try {
+    const theme = await AsyncStorage.getItem(STORAGE_KEYS.APP_THEME);
+    if (theme === 'light' || theme === 'dark' || theme === 'system') {
+      return theme;
+    }
+    return 'system';
+  } catch (error) {
+    console.error('Error loading app theme:', error);
+    return 'system';
+  }
+}
+
+export async function saveAppTheme(theme: AppTheme): Promise<void> {
+  try {
+    await AsyncStorage.setItem(STORAGE_KEYS.APP_THEME, theme);
+  } catch (error) {
+    console.error('Error saving app theme:', error);
+  }
+}
+
 // Force refresh widget timeline (call after data changes)
 export async function reloadWidget(): Promise<void> {
   if (Platform.OS === 'ios') {
@@ -165,5 +196,84 @@ export async function reloadWidget(): Promise<void> {
     } catch (error) {
       console.warn('Widget reload failed:', error);
     }
+  }
+}
+
+// DEV MODE: Generate random test data for testing
+export async function generateTestData(days: number = 75): Promise<void> {
+  const data = await getAppData();
+
+  // Add sample rules if none exist
+  if (data.rules.length === 0) {
+    data.rules = [
+      { id: 'test-1', text: 'Follow my trading plan', createdAt: new Date().toISOString() },
+      { id: 'test-2', text: 'No revenge trading', createdAt: new Date().toISOString() },
+      { id: 'test-3', text: 'Risk max 1% per trade', createdAt: new Date().toISOString() },
+    ];
+  }
+
+  // Generate logs for past N weekdays
+  const today = new Date();
+  let currentDate = new Date(today);
+  let daysGenerated = 0;
+
+  while (daysGenerated < days) {
+    currentDate.setDate(currentDate.getDate() - 1);
+
+    // Skip weekends
+    const dayOfWeek = currentDate.getDay();
+    if (dayOfWeek === 0 || dayOfWeek === 6) continue;
+
+    const dateStr = currentDate.toISOString().split('T')[0];
+
+    // Random status: ~80% green, ~20% red for realistic data
+    const isGreen = Math.random() < 0.8;
+    const isNoTrade = isGreen && Math.random() < 0.15; // 15% of green days are no-trade
+
+    const ruleResults: Record<string, boolean> = {};
+    if (!isNoTrade) {
+      data.rules.forEach((rule) => {
+        ruleResults[rule.id] = isGreen ? true : Math.random() < 0.5;
+      });
+    }
+
+    data.logs[dateStr] = {
+      date: dateStr,
+      status: isGreen ? 'green' : 'red',
+      noTradeDay: isNoTrade,
+      ruleResults: isNoTrade ? undefined : ruleResults,
+    };
+
+    daysGenerated++;
+  }
+
+  await saveAppData(data);
+}
+
+// DEV MODE: Clear all test data
+export async function clearAllData(): Promise<void> {
+  await AsyncStorage.removeItem(STORAGE_KEYS.APP_DATA);
+  await AsyncStorage.removeItem(STORAGE_KEYS.WIDGET_SETTINGS);
+}
+
+// Notification settings management
+export async function getNotificationSettings(): Promise<NotificationSettings> {
+  try {
+    const data = await AsyncStorage.getItem(STORAGE_KEYS.NOTIFICATION_SETTINGS);
+    if (data) {
+      return { ...DEFAULT_NOTIFICATION_SETTINGS, ...JSON.parse(data) };
+    }
+    return DEFAULT_NOTIFICATION_SETTINGS;
+  } catch (error) {
+    console.error('Error loading notification settings:', error);
+    return DEFAULT_NOTIFICATION_SETTINGS;
+  }
+}
+
+export async function saveNotificationSettings(settings: NotificationSettings): Promise<void> {
+  try {
+    await AsyncStorage.setItem(STORAGE_KEYS.NOTIFICATION_SETTINGS, JSON.stringify(settings));
+  } catch (error) {
+    console.error('Error saving notification settings:', error);
   }
 }

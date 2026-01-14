@@ -88,3 +88,14 @@ export function parseDate(dateString: string): Date {
 
 export const WEEKDAY_LABELS = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
 export const WEEKDAY_LABELS_NO_WEEKEND = ['M', 'T', 'W', 'T', 'F'];
+
+export function getFirstTrackingDay(logs: Record<string, unknown>): Date | null {
+  const dates = Object.keys(logs).sort();
+  if (dates.length === 0) return null;
+  return parseISO(dates[0]);
+}
+
+export function getWeekdaysInRange(start: Date, end: Date): Date[] {
+  const days = eachDayOfInterval({ start, end });
+  return days.filter((day) => !isWeekend(day));
+}

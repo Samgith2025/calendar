@@ -4,13 +4,13 @@
 
 ## APP SUMMARY
 
-[Describe your app in 1-2 sentences]
+Trading Rules Tracker - iOS app to help traders track daily adherence to their trading rules with visual progress tracking.
 
-**Target Audience:** [Who is this app for?]
+**Target Audience:** Day traders and active traders
 
-**Core Value Prop:** [What's the main benefit users get?]
+**Core Value Prop:** Simple daily check-in to build discipline and visualize rule compliance over time
 
-**Vision:** [Where is this app headed long-term?]
+**Vision:** Help traders build consistent habits through accountability and progress visualization
 
 ---
 
@@ -18,18 +18,19 @@
 
 | Layer | Technology |
 |-------|------------|
-| Framework | [e.g., React Native, Next.js, etc.] |
-| Navigation | [e.g., React Navigation, Expo Router] |
-| Styling | [e.g., Tailwind, styled-components] |
-| State (Client) | [e.g., Zustand, Redux, Context] |
-| State (Server) | [e.g., TanStack Query, SWR] |
-| Backend | [e.g., Supabase, Firebase, custom API] |
-| Auth | [e.g., Supabase Auth, Auth0, Clerk] |
+| Framework | React Native + Expo |
+| Navigation | Expo Router |
+| Styling | React Native StyleSheet |
+| State (Client) | React Context (AppContext, ThemeContext) |
+| State (Server) | N/A (local storage only) |
+| Backend | AsyncStorage (local) |
+| Auth | N/A |
+| Notifications | expo-notifications (local scheduling) |
 
 **Key Commands:**
-- `npm run typecheck` — TypeScript check
-- `npm run lint` — ESLint
-- `npm run dev` — Dev server
+- `npx tsc --noEmit` — TypeScript check
+- `npx expo start` — Dev server
+- `npx expo start --ios` — iOS simulator
 
 ---
 

@@ -103,13 +103,13 @@ struct TradingTrackerWidgetEntryView: View {
             ZStack {
                 backgroundColor
 
-                VStack(alignment: .leading, spacing: 8) {
+                VStack(alignment: .leading, spacing: 6) {
                     headerView
 
                     if family == .systemSmall {
-                        smallGridView(width: geometry.size.width - 24)
+                        dotGridView(width: geometry.size.width - 24, dotSize: 6, gap: 2)
                     } else {
-                        mediumGridView(width: geometry.size.width - 24)
+                        dotGridView(width: geometry.size.width - 24, dotSize: 8, gap: 3)
                     }
                 }
                 .padding(12)
@@ -119,11 +119,13 @@ struct TradingTrackerWidgetEntryView: View {
 
     private var headerView: some View {
         HStack {
-            VStack(alignment: .leading, spacing: 2) {
-                Text(monthYearString())
-                    .font(.system(size: 14, weight: .semibold))
-                    .foregroundColor(textColor)
+            VStack(alignment: .leading, spacing: 1) {
                 Text("Trading Rules")
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundColor(textColor)
+
+                let stats = calculateStats()
+                Text("\(stats.greenDays)/\(stats.totalDays) days")
                     .font(.system(size: 10))
                     .foregroundColor(secondaryTextColor)
             }
@@ -133,179 +135,117 @@ struct TradingTrackerWidgetEntryView: View {
             if entry.settings.showCompletionIndicator {
                 let stats = calculateStats()
                 Text("\(stats.rate)%")
-                    .font(.system(size: 16, weight: .bold))
-                    .foregroundColor(accentColor)
+                    .font(.system(size: 14, weight: .bold))
+                    .foregroundColor(stats.rate >= 80 ? Color(hex: "#22c55e") : stats.rate >= 50 ? textColor : Color(hex: "#ef4444"))
             }
         }
     }
 
-    private func smallGridView(width: CGFloat) -> some View {
-        let days = getMonthDays()
-        let columns = 7
-        let boxSize: CGFloat = (width - CGFloat(columns - 1) * 3) / CGFloat(columns)
+    private func dotGridView(width: CGFloat, dotSize: CGFloat, gap: CGFloat) -> some View {
+        let dots = getTrackingDots()
 
-        return VStack(spacing: 3) {
-            // Weekday labels
-            HStack(spacing: 3) {
-                ForEach(["M", "T", "W", "T", "F", "S", "S"], id: \.self) { day in
-                    Text(day)
-                        .font(.system(size: 8))
-                        .foregroundColor(secondaryTextColor)
-                        .frame(width: boxSize)
-                }
-            }
+        // Calculate how many dots fit per row
+        let dotsPerRow = Int((width + gap) / (dotSize + gap))
 
-            // Day grid
-            LazyVGrid(columns: Array(repeating: GridItem(.fixed(boxSize), spacing: 3), count: columns), spacing: 3) {
-                ForEach(days.indices, id: \.self) { index in
-                    dayBox(for: days[index], size: boxSize)
-                }
-            }
-        }
-    }
-
-    private func mediumGridView(width: CGFloat) -> some View {
-        let days = getMonthDays()
-        let columns = 7
-        let boxSize: CGFloat = min(24, (width - CGFloat(columns - 1) * 4) / CGFloat(columns))
-
-        return VStack(spacing: 4) {
-            // Weekday labels
-            HStack(spacing: 4) {
-                ForEach(["M", "T", "W", "T", "F", "S", "S"], id: \.self) { day in
-                    Text(day)
-                        .font(.system(size: 10))
-                        .foregroundColor(secondaryTextColor)
-                        .frame(width: boxSize)
-                }
-            }
-
-            // Day grid
-            LazyVGrid(columns: Array(repeating: GridItem(.fixed(boxSize), spacing: 4), count: columns), spacing: 4) {
-                ForEach(days.indices, id: \.self) { index in
-                    dayBox(for: days[index], size: boxSize)
+        return VStack(alignment: .leading, spacing: gap) {
+            // Wrap dots in rows
+            ForEach(0..<((dots.count + dotsPerRow - 1) / dotsPerRow), id: \.self) { rowIndex in
+                HStack(spacing: gap) {
+                    ForEach(0..<dotsPerRow, id: \.self) { colIndex in
+                        let index = rowIndex * dotsPerRow + colIndex
+                        if index < dots.count {
+                            Circle()
+                                .fill(dots[index])
+                                .frame(width: dotSize, height: dotSize)
+                        } else {
+                            Circle()
+                                .fill(Color.clear)
+                                .frame(width: dotSize, height: dotSize)
+                        }
+                    }
                 }
             }
         }
     }
 
-    private func dayBox(for day: Date?, size: CGFloat) -> some View {
-        Group {
-            if let day = day {
-                let isWeekend = Calendar.current.isDateInWeekend(day)
-                let status = getDayStatus(for: day)
-                let boxColor = getBoxColor(status: status, isWeekend: isWeekend)
-
-                RoundedRectangle(cornerRadius: size * 0.2)
-                    .fill(boxColor)
-                    .frame(width: size, height: size)
-            } else {
-                Color.clear
-                    .frame(width: size, height: size)
-            }
-        }
-    }
-
-    private func getDayStatus(for date: Date) -> String {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "yyyy-MM-dd"
-        let dateString = formatter.string(from: date)
-
-        if let log = entry.logs[dateString] {
-            return log.status
-        }
-
-        if date < Calendar.current.startOfDay(for: Date()) {
-            return "grey"
-        }
-
-        return "none"
-    }
-
-    private func getBoxColor(status: String, isWeekend: Bool) -> Color {
-        if isWeekend {
-            return Color.clear
-        }
-
-        switch status {
-        case "green":
-            return Color(hex: "#22c55e")
-        case "red":
-            return Color(hex: "#ef4444")
-        case "grey":
-            return isDarkMode ? Color(hex: "#4b5563") : Color(hex: "#d1d5db")
-        default:
-            return isDarkMode ? Color(hex: "#374151") : Color(hex: "#e5e7eb")
-        }
-    }
-
-    private func getMonthDays() -> [Date?] {
+    private func getTrackingDots() -> [Color] {
         let calendar = Calendar.current
         let now = Date()
 
-        guard let monthStart = calendar.date(from: calendar.dateComponents([.year, .month], from: now)),
-              let monthEnd = calendar.date(byAdding: DateComponents(month: 1, day: -1), to: monthStart) else {
+        // Find the first tracking day from logs
+        let sortedDates = entry.logs.keys.sorted()
+        guard let firstDateString = sortedDates.first,
+              let firstDate = dateFromString(firstDateString) else {
             return []
         }
 
-        var days: [Date?] = []
+        var dots: [Color] = []
+        var currentDay = firstDate
 
-        // Add empty slots for days before the 1st
-        let weekday = calendar.component(.weekday, from: monthStart)
-        let mondayBasedWeekday = weekday == 1 ? 6 : weekday - 2
-        for _ in 0..<mondayBasedWeekday {
-            days.append(nil)
-        }
+        // Generate dots from first tracking day to today (weekdays only)
+        while currentDay <= now {
+            if !calendar.isDateInWeekend(currentDay) {
+                let dateString = stringFromDate(currentDay)
 
-        // Add all days of the month
-        var currentDay = monthStart
-        while currentDay <= monthEnd {
-            days.append(currentDay)
+                if let log = entry.logs[dateString] {
+                    if log.status == "green" {
+                        dots.append(Color(hex: "#22c55e"))
+                    } else {
+                        dots.append(Color(hex: "#ef4444"))
+                    }
+                } else {
+                    // No log = missed (red)
+                    dots.append(Color(hex: "#ef4444"))
+                }
+            }
             currentDay = calendar.date(byAdding: .day, value: 1, to: currentDay)!
         }
 
-        return days
+        return dots
     }
 
-    private func monthYearString() -> String {
+    private func dateFromString(_ string: String) -> Date? {
         let formatter = DateFormatter()
-        formatter.dateFormat = "MMMM yyyy"
-        return formatter.string(from: Date())
+        formatter.dateFormat = "yyyy-MM-dd"
+        return formatter.date(from: string)
     }
 
-    private func calculateStats() -> (streak: Int, rate: Int, missed: Int) {
+    private func stringFromDate(_ date: Date) -> String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd"
+        return formatter.string(from: date)
+    }
+
+    private func calculateStats() -> (greenDays: Int, totalDays: Int, rate: Int) {
         let calendar = Calendar.current
         let now = Date()
 
-        guard let monthStart = calendar.date(from: calendar.dateComponents([.year, .month], from: now)) else {
+        // Find the first tracking day
+        let sortedDates = entry.logs.keys.sorted()
+        guard let firstDateString = sortedDates.first,
+              let firstDate = dateFromString(firstDateString) else {
             return (0, 0, 0)
         }
 
         var greenDays = 0
-        var redDays = 0
-        var currentDay = monthStart
+        var totalDays = 0
+        var currentDay = firstDate
 
         while currentDay <= now {
             if !calendar.isDateInWeekend(currentDay) {
-                let formatter = DateFormatter()
-                formatter.dateFormat = "yyyy-MM-dd"
-                let dateString = formatter.string(from: currentDay)
+                totalDays += 1
+                let dateString = stringFromDate(currentDay)
 
-                if let log = entry.logs[dateString] {
-                    if log.status == "green" {
-                        greenDays += 1
-                    } else if log.status == "red" {
-                        redDays += 1
-                    }
+                if let log = entry.logs[dateString], log.status == "green" {
+                    greenDays += 1
                 }
             }
             currentDay = calendar.date(byAdding: .day, value: 1, to: currentDay)!
         }
 
-        let total = greenDays + redDays
-        let rate = total > 0 ? Int((Double(greenDays) / Double(total)) * 100) : 0
+        let rate = totalDays > 0 ? Int((Double(greenDays) / Double(totalDays)) * 100) : 0
 
-        return (greenDays, rate, redDays)
+        return (greenDays, totalDays, rate)
     }
 }
 

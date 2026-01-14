@@ -4,11 +4,18 @@ import { useApp } from '@/context/AppContext';
 import { MonthGrid } from '@/components/MonthGrid';
 import { StatsCard } from '@/components/StatsCard';
 import { DailyChecklist } from '@/components/DailyChecklist';
+import { DotGridView, ViewMode } from '@/components/DotGridView';
 import Colors from '@/constants/Colors';
 import { useColorScheme } from '@/components/useColorScheme';
 import { formatMonthYear, getCurrentDateET } from '@/utils/date';
 import { addMonths, subMonths } from 'date-fns';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
+
+const VIEW_MODES: { key: ViewMode; label: string }[] = [
+  { key: 'month', label: 'Month' },
+  { key: 'quarter', label: '3M' },
+  { key: 'year', label: 'Year' },
+];
 
 export default function TrackScreen() {
   const { isLoading } = useApp();
@@ -16,6 +23,7 @@ export default function TrackScreen() {
   const colors = Colors[colorScheme];
 
   const [currentMonth, setCurrentMonth] = useState(getCurrentDateET());
+  const [viewMode, setViewMode] = useState<ViewMode>('month');
 
   const goToPreviousMonth = () => {
     setCurrentMonth((prev) => subMonths(prev, 1));
@@ -38,23 +46,56 @@ export default function TrackScreen() {
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
       <ScrollView contentContainerStyle={styles.scrollContent}>
-        <View style={styles.header}>
-          <Pressable onPress={goToPreviousMonth} style={styles.navButton}>
-            <FontAwesome name="chevron-left" size={18} color={colors.text} />
-          </Pressable>
-          <Text style={[styles.monthTitle, { color: colors.text }]}>
-            {formatMonthYear(currentMonth)}
-          </Text>
-          <Pressable onPress={goToNextMonth} style={styles.navButton}>
-            <FontAwesome name="chevron-right" size={18} color={colors.text} />
-          </Pressable>
+        {/* View Mode Toggle */}
+        <View style={styles.toggleContainer}>
+          {VIEW_MODES.map((mode) => (
+            <Pressable
+              key={mode.key}
+              style={[
+                styles.toggleButton,
+                { backgroundColor: colors.cardBackground },
+                viewMode === mode.key && { backgroundColor: colors.green },
+              ]}
+              onPress={() => setViewMode(mode.key)}
+            >
+              <Text
+                style={[
+                  styles.toggleText,
+                  { color: colors.textSecondary },
+                  viewMode === mode.key && { color: '#ffffff' },
+                ]}
+              >
+                {mode.label}
+              </Text>
+            </Pressable>
+          ))}
         </View>
 
-        <StatsCard month={currentMonth} />
+        {viewMode === 'month' ? (
+          <>
+            <View style={styles.header}>
+              <Pressable onPress={goToPreviousMonth} style={styles.navButton}>
+                <FontAwesome name="chevron-left" size={18} color={colors.text} />
+              </Pressable>
+              <Text style={[styles.monthTitle, { color: colors.text }]}>
+                {formatMonthYear(currentMonth)}
+              </Text>
+              <Pressable onPress={goToNextMonth} style={styles.navButton}>
+                <FontAwesome name="chevron-right" size={18} color={colors.text} />
+              </Pressable>
+            </View>
 
-        <View style={styles.section}>
-          <MonthGrid month={currentMonth} />
-        </View>
+            <StatsCard month={currentMonth} />
+
+            <View style={styles.section}>
+              <MonthGrid month={currentMonth} />
+            </View>
+          </>
+        ) : (
+          <View style={styles.section}>
+            <DotGridView mode={viewMode} />
+          </View>
+        )}
 
         <View style={styles.section}>
           <DailyChecklist />
@@ -78,6 +119,22 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     paddingBottom: 40,
+  },
+  toggleContainer: {
+    flexDirection: 'row',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    gap: 8,
+  },
+  toggleButton: {
+    flex: 1,
+    paddingVertical: 8,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  toggleText: {
+    fontSize: 13,
+    fontWeight: '600',
   },
   header: {
     flexDirection: 'row',

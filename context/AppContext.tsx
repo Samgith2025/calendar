@@ -1,13 +1,15 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
-import { AppData, DayLog, Rule, DayStatus, WidgetSettings } from '@/types';
+import { AppData, DayLog, Rule, DayStatus, WidgetSettings, NotificationSettings } from '@/types';
 import * as storage from '@/utils/storage';
 import { formatDate, getCurrentDateET, isPastDay, isTodayET, isWeekendDay } from '@/utils/date';
 import { reloadWidget } from '@/utils/storage';
+import { scheduleReminders, cancelAllReminders } from '@/utils/notifications';
 
 interface AppContextType {
   rules: Rule[];
   logs: Record<string, DayLog>;
   widgetSettings: WidgetSettings;
+  notificationSettings: NotificationSettings;
   isLoading: boolean;
   addRule: (text: string) => Promise<void>;
   updateRule: (id: string, text: string) => Promise<void>;
@@ -16,6 +18,7 @@ interface AppContextType {
   markNoTradeDay: () => Promise<void>;
   getDayStatus: (date: Date) => DayStatus;
   updateWidgetSettings: (settings: Partial<WidgetSettings>) => Promise<void>;
+  updateNotificationSettings: (settings: Partial<NotificationSettings>) => Promise<void>;
   refreshData: () => Promise<void>;
   todayLog: DayLog | null;
   canEditToday: boolean;
@@ -31,6 +34,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
     accentColor: '#22c55e',
     showCompletionIndicator: true,
   });
+  const [notificationSettings, setNotificationSettings] = useState<NotificationSettings>({
+    enabled: false,
+    startTime: '16:00',
+    interval: 15,
+    endTime: '23:00',
+  });
   const [isLoading, setIsLoading] = useState(true);
 
   const refreshData = useCallback(async () => {
@@ -41,6 +50,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
       setLogs(appData.logs);
       const settings = await storage.getWidgetSettings();
       setWidgetSettings(settings);
+      const notifSettings = await storage.getNotificationSettings();
+      setNotificationSettings(notifSettings);
     } catch (error) {
       console.error('Error refreshing data:', error);
     } finally {
@@ -78,6 +89,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
     };
     await storage.saveDayLog(log);
     setLogs((prev) => ({ ...prev, [today]: log }));
+    // Cancel reminders since day is now complete
+    await cancelAllReminders();
     // Refresh widget to show new data
     await reloadWidget();
   };
@@ -91,6 +104,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
     };
     await storage.saveDayLog(log);
     setLogs((prev) => ({ ...prev, [today]: log }));
+    // Cancel reminders since day is now complete
+    await cancelAllReminders();
     // Refresh widget to show new data
     await reloadWidget();
   };
@@ -126,6 +141,17 @@ export function AppProvider({ children }: { children: ReactNode }) {
     await reloadWidget();
   };
 
+  const updateNotificationSettings = async (settings: Partial<NotificationSettings>) => {
+    const newSettings = { ...notificationSettings, ...settings };
+    await storage.saveNotificationSettings(newSettings);
+    setNotificationSettings(newSettings);
+
+    // Reschedule reminders with new settings
+    const today = formatDate(getCurrentDateET());
+    const isTodayComplete = !!logs[today];
+    await scheduleReminders(newSettings, isTodayComplete);
+  };
+
   const today = formatDate(getCurrentDateET());
   const todayLog = logs[today] || null;
   const canEditToday = !todayLog;
@@ -136,6 +162,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         rules,
         logs,
         widgetSettings,
+        notificationSettings,
         isLoading,
         addRule,
         updateRule,
@@ -144,6 +171,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         markNoTradeDay,
         getDayStatus,
         updateWidgetSettings,
+        updateNotificationSettings,
         refreshData,
         todayLog,
         canEditToday,

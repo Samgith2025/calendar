@@ -25,6 +25,24 @@ export interface WidgetSettings {
   showCompletionIndicator: boolean;
 }
 
+export type AppTheme = 'system' | 'light' | 'dark';
+
+export type ReminderInterval = 5 | 15 | 30 | 60;
+
+export interface NotificationSettings {
+  enabled: boolean;
+  startTime: string; // "HH:mm" format, e.g., "16:00"
+  interval: ReminderInterval;
+  endTime: string; // "HH:mm" format, e.g., "23:00"
+}
+
+export const REMINDER_INTERVALS: { value: ReminderInterval; label: string }[] = [
+  { value: 5, label: '5 min' },
+  { value: 15, label: '15 min' },
+  { value: 30, label: '30 min' },
+  { value: 60, label: '1 hour' },
+];
+
 export const ACCENT_COLORS = [
   '#ef4444', // red
   '#f97316', // orange

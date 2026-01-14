@@ -1,5 +1,5 @@
 import FontAwesome from '@expo/vector-icons/FontAwesome';
-import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
+import { DarkTheme, DefaultTheme, ThemeProvider as NavigationThemeProvider } from '@react-navigation/native';
 import { useFonts } from 'expo-font';
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
@@ -7,7 +7,10 @@ import { useEffect } from 'react';
 import 'react-native-reanimated';
 
 import { useColorScheme } from '@/components/useColorScheme';
-import { AppProvider } from '@/context/AppContext';
+import { AppProvider, useApp } from '@/context/AppContext';
+import { ThemeProvider } from '@/context/ThemeContext';
+import { configureNotifications, scheduleReminders } from '@/utils/notifications';
+import { formatDate, getCurrentDateET } from '@/utils/date';
 
 export {
   ErrorBoundary,
@@ -18,6 +21,9 @@ export const unstable_settings = {
 };
 
 SplashScreen.preventAutoHideAsync();
+
+// Configure notifications on app load
+configureNotifications();
 
 export default function RootLayout() {
   const [loaded, error] = useFonts({
@@ -39,7 +45,29 @@ export default function RootLayout() {
     return null;
   }
 
-  return <RootLayoutNav />;
+  return (
+    <ThemeProvider>
+      <RootLayoutNav />
+    </ThemeProvider>
+  );
+}
+
+// Component to handle notification scheduling based on app state
+function NotificationScheduler() {
+  const { logs, notificationSettings, isLoading } = useApp();
+
+  useEffect(() => {
+    if (isLoading) return;
+
+    // Check if today's log is complete
+    const today = formatDate(getCurrentDateET());
+    const isTodayComplete = !!logs[today];
+
+    // Schedule or cancel reminders based on current state
+    scheduleReminders(notificationSettings, isTodayComplete);
+  }, [logs, notificationSettings, isLoading]);
+
+  return null;
 }
 
 function RootLayoutNav() {
@@ -47,11 +75,12 @@ function RootLayoutNav() {
 
   return (
     <AppProvider>
-      <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+      <NotificationScheduler />
+      <NavigationThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
         <Stack>
           <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         </Stack>
-      </ThemeProvider>
+      </NavigationThemeProvider>
     </AppProvider>
   );
 }
