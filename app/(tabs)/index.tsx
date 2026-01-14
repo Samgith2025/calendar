@@ -42,14 +42,9 @@ export default function TrackScreen() {
           <Pressable onPress={goToPreviousMonth} style={styles.navButton}>
             <FontAwesome name="chevron-left" size={18} color={colors.text} />
           </Pressable>
-          <View style={styles.headerCenter}>
-            <Text style={[styles.monthTitle, { color: colors.text }]}>
-              {formatMonthYear(currentMonth)}
-            </Text>
-            <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
-              DAILY GOALS
-            </Text>
-          </View>
+          <Text style={[styles.monthTitle, { color: colors.text }]}>
+            {formatMonthYear(currentMonth)}
+          </Text>
           <Pressable onPress={goToNextMonth} style={styles.navButton}>
             <FontAwesome name="chevron-right" size={18} color={colors.text} />
           </Pressable>
@@ -89,24 +84,16 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 16,
-    paddingVertical: 20,
+    paddingVertical: 12,
   },
   navButton: {
     padding: 10,
-  },
-  headerCenter: {
-    alignItems: 'center',
   },
   monthTitle: {
     fontSize: 22,
     fontWeight: '600',
   },
-  subtitle: {
-    fontSize: 12,
-    fontWeight: '500',
-    marginTop: 2,
-  },
   section: {
-    marginTop: 16,
+    marginTop: 12,
   },
 });

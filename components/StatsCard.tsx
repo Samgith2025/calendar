@@ -94,21 +94,22 @@ const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
     paddingHorizontal: 16,
-    gap: 12,
+    gap: 10,
   },
   statCard: {
     flex: 1,
-    borderRadius: 12,
-    padding: 16,
+    borderRadius: 10,
+    paddingVertical: 10,
+    paddingHorizontal: 8,
     alignItems: 'center',
   },
   statValue: {
-    fontSize: 28,
+    fontSize: 20,
     fontWeight: 'bold',
   },
   statLabel: {
-    fontSize: 12,
+    fontSize: 10,
     fontWeight: '500',
-    marginTop: 4,
+    marginTop: 2,
   },
 });

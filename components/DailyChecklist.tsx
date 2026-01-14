@@ -11,6 +11,7 @@ export function DailyChecklist() {
   const colors = Colors[colorScheme];
 
   const [ruleStates, setRuleStates] = useState<Record<string, boolean | null>>({});
+  const [isExpanded, setIsExpanded] = useState(false);
 
   // Reset rule states when rules change
   useEffect(() => {
@@ -65,13 +66,17 @@ export function DailyChecklist() {
   if (!canEditToday) {
     const isGreen = todayLog?.status === 'green';
     const isNoTrade = todayLog?.noTradeDay;
+    const loggedRules = rules.filter((rule) => todayLog?.ruleResults?.[rule.id] !== undefined);
 
     return (
-      <View style={[styles.container, { backgroundColor: colors.cardBackground }]}>
-        <View style={styles.completedHeader}>
+      <Pressable
+        style={[styles.container, { backgroundColor: colors.cardBackground }]}
+        onPress={() => loggedRules.length > 0 && setIsExpanded(!isExpanded)}
+      >
+        <View style={styles.completedRow}>
           <FontAwesome
             name={isGreen ? 'check-circle' : 'times-circle'}
-            size={48}
+            size={20}
             color={isGreen ? colors.green : colors.red}
           />
           <Text style={[styles.completedTitle, { color: colors.text }]}>
@@ -81,33 +86,36 @@ export function DailyChecklist() {
               ? 'Rules Followed'
               : 'Rules Broken'}
           </Text>
-          <Text style={[styles.completedSubtitle, { color: colors.textSecondary }]}>
-            Today's log has been recorded
-          </Text>
+          {loggedRules.length > 0 && (
+            <FontAwesome
+              name={isExpanded ? 'chevron-up' : 'chevron-down'}
+              size={12}
+              color={colors.textSecondary}
+              style={styles.expandIcon}
+            />
+          )}
         </View>
 
-        {todayLog?.ruleResults && (
+        {isExpanded && loggedRules.length > 0 && (
           <View style={styles.resultsContainer}>
-            {rules
-              .filter((rule) => todayLog.ruleResults?.[rule.id] !== undefined)
-              .map((rule) => {
-                const followed = todayLog.ruleResults?.[rule.id];
-                return (
-                  <View key={rule.id} style={styles.resultRow}>
-                    <FontAwesome
-                      name={followed ? 'check' : 'times'}
-                      size={16}
-                      color={followed ? colors.green : colors.red}
-                    />
-                    <Text style={[styles.resultText, { color: colors.text }]}>
-                      {rule.text}
-                    </Text>
-                  </View>
-                );
-              })}
+            {loggedRules.map((rule) => {
+              const followed = todayLog?.ruleResults?.[rule.id];
+              return (
+                <View key={rule.id} style={styles.resultRow}>
+                  <FontAwesome
+                    name={followed ? 'check' : 'times'}
+                    size={12}
+                    color={followed ? colors.green : colors.red}
+                  />
+                  <Text style={[styles.resultText, { color: colors.text }]}>
+                    {rule.text}
+                  </Text>
+                </View>
+              );
+            })}
           </View>
         )}
-      </View>
+      </Pressable>
     );
   }
 
@@ -146,8 +154,8 @@ export function DailyChecklist() {
                 state === false && { backgroundColor: colors.red, borderColor: colors.red },
               ]}
             >
-              {state === true && <FontAwesome name="check" size={14} color="white" />}
-              {state === false && <FontAwesome name="times" size={14} color="white" />}
+              {state === true && <FontAwesome name="check" size={12} color="white" />}
+              {state === false && <FontAwesome name="times" size={12} color="white" />}
             </View>
             <Text style={[styles.ruleText, { color: colors.text }]}>{rule.text}</Text>
           </Pressable>
@@ -177,88 +185,88 @@ export function DailyChecklist() {
 
 const styles = StyleSheet.create({
   container: {
-    borderRadius: 16,
-    padding: 16,
+    borderRadius: 12,
+    padding: 12,
     marginHorizontal: 16,
   },
   title: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: '600',
-    marginBottom: 16,
+    marginBottom: 10,
   },
   ruleRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 14,
-    borderRadius: 12,
+    padding: 10,
+    borderRadius: 10,
     borderWidth: 1,
-    marginBottom: 10,
+    marginBottom: 6,
   },
   checkbox: {
-    width: 24,
-    height: 24,
-    borderRadius: 6,
+    width: 22,
+    height: 22,
+    borderRadius: 5,
     borderWidth: 2,
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: 12,
+    marginRight: 10,
   },
   ruleText: {
-    fontSize: 16,
+    fontSize: 14,
     flex: 1,
   },
   buttonContainer: {
-    marginTop: 8,
-    gap: 12,
+    marginTop: 6,
+    gap: 8,
   },
   submitButton: {
-    paddingVertical: 14,
-    borderRadius: 12,
+    paddingVertical: 12,
+    borderRadius: 10,
     alignItems: 'center',
   },
   submitButtonText: {
     color: 'white',
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '600',
   },
   noTradeButton: {
-    paddingVertical: 14,
-    borderRadius: 12,
+    paddingVertical: 12,
+    borderRadius: 10,
     alignItems: 'center',
     borderWidth: 1,
   },
   noTradeButtonText: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '500',
   },
   emptyText: {
     textAlign: 'center',
-    fontSize: 14,
-    paddingVertical: 20,
+    fontSize: 13,
+    paddingVertical: 16,
   },
-  completedHeader: {
+  completedRow: {
+    flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 20,
+    gap: 8,
   },
   completedTitle: {
-    fontSize: 20,
+    fontSize: 16,
     fontWeight: '600',
-    marginTop: 12,
+    flex: 1,
   },
-  completedSubtitle: {
-    fontSize: 14,
-    marginTop: 4,
+  expandIcon: {
+    marginLeft: 'auto',
   },
   resultsContainer: {
-    marginTop: 16,
-    gap: 8,
+    marginTop: 10,
+    gap: 6,
   },
   resultRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
+    gap: 8,
   },
   resultText: {
-    fontSize: 14,
+    fontSize: 13,
   },
 });
