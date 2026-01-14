@@ -1,50 +1,50 @@
- ERROR  Encountered two children with the same key, `%s`. Keys should be unique so that components maintain their identity across updates. Non-unique keys may cause children to be duplicated and/or omitted — the behavior is unsupported and could change in a future version. 1768397421758 
+ ERROR  Encountered two children with the same key, `%s`. Keys should be unique so that components maintain their identity across updates. Non-unique keys may cause children to be duplicated and/or omitted — the behavior is unsupported and could change in a future version. 1768405968287-n5krxc5hw 
 
 Code: DailyChecklist.tsx
-  127 |         const state = ruleStates[rule.id];
-  128 |         return (
-> 129 |           <Pressable
+  137 |         const state = ruleStates[rule.id];
+  138 |         return (
+> 139 |           <Pressable
       |           ^
-  130 |             key={rule.id}
-  131 |             style={[
-  132 |               styles.ruleRow,
+  140 |             key={rule.id}
+  141 |             style={[
+  142 |               styles.ruleRow,
 Call Stack
-  rules.map$argument_0 (components/DailyChecklist.tsx:129:11)
-  DailyChecklist (components/DailyChecklist.tsx:126:17)
-  TrackScreen (app/(tabs)/index.tsx:65:11)
+  rules.map$argument_0 (components/DailyChecklist.tsx:139:11)
+  DailyChecklist (components/DailyChecklist.tsx:136:17)
+  TrackScreen (app/(tabs)/index.tsx:101:11)
   TabLayout (app/(tabs)/_layout.tsx:20:5)
-  RootLayoutNav (app/_layout.tsx:51:9)
-  RootLayout (app/_layout.tsx:42:10)
- ERROR  Encountered two children with the same key, `%s`. Keys should be unique so that components maintain their identity across updates. Non-unique keys may cause children to be duplicated and/or omitted — the behavior is unsupported and could change in a future version. 1768397421758 
+  RootLayoutNav (app/_layout.tsx:79:8)
+  RootLayout (app/_layout.tsx:46:3)
+ ERROR  Encountered two children with the same key, `%s`. Keys should be unique so that components maintain their identity across updates. Non-unique keys may cause children to be duplicated and/or omitted — the behavior is unsupported and could change in a future version. 1768405968287-n5krxc5hw 
 
 Code: two.tsx
-  78 |
-  79 |           {rules.map((rule) => (
-> 80 |             <View key={rule.id} style={[styles.ruleItem, { borderColor: colors.border }]}>
-     |             ^
-  81 |               {editingRuleId === rule.id ? (
-  82 |                 <View style={styles.editContainer}>
-  83 |                   <TextInput
+  345 |
+  346 |           {rules.map((rule) => (
+> 347 |             <View key={rule.id} style={[styles.ruleItem, { borderColor: colors.border }]}>
+      |             ^
+  348 |               {editingRuleId === rule.id ? (
+  349 |                 <View style={styles.editContainer}>
+  350 |                   <TextInput
 Call Stack
-  rules.map$argument_0 (app/(tabs)/two.tsx:80:13)
-  ProfileScreen (app/(tabs)/two.tsx:79:21)
+  rules.map$argument_0 (app/(tabs)/two.tsx:347:13)
+  ProfileScreen (app/(tabs)/two.tsx:346:21)
   TabLayout (app/(tabs)/_layout.tsx:20:5)
-  RootLayoutNav (app/_layout.tsx:51:9)
-  RootLayout (app/_layout.tsx:42:10)
- ERROR  Encountered two children with the same key, `%s`. Keys should be unique so that components maintain their identity across updates. Non-unique keys may cause children to be duplicated and/or omitted — the behavior is unsupported and could change in a future version. 1768397421758 
+  RootLayoutNav (app/_layout.tsx:79:8)
+  RootLayout (app/_layout.tsx:46:3)
+ ERROR  Encountered two children with the same key, `%s`. Keys should be unique so that components maintain their identity across updates. Non-unique keys may cause children to be duplicated and/or omitted — the behavior is unsupported and could change in a future version. 1768405968287-n5krxc5hw 
 
 Code: DailyChecklist.tsx
-  127 |         const state = ruleStates[rule.id];
-  128 |         return (
-> 129 |           <Pressable
+  137 |         const state = ruleStates[rule.id];
+  138 |         return (
+> 139 |           <Pressable
       |           ^
-  130 |             key={rule.id}
-  131 |             style={[
-  132 |               styles.ruleRow,
+  140 |             key={rule.id}
+  141 |             style={[
+  142 |               styles.ruleRow,
 Call Stack
-  rules.map$argument_0 (components/DailyChecklist.tsx:129:11)
-  DailyChecklist (components/DailyChecklist.tsx:126:17)
-  TrackScreen (app/(tabs)/index.tsx:65:11)
+  rules.map$argument_0 (components/DailyChecklist.tsx:139:11)
+  DailyChecklist (components/DailyChecklist.tsx:136:17)
+  TrackScreen (app/(tabs)/index.tsx:101:11)
   TabLayout (app/(tabs)/_layout.tsx:20:5)
-  RootLayoutNav (app/_layout.tsx:51:9)
-  RootLayout (app/_layout.tsx:42:10)
+  RootLayoutNav (app/_layout.tsx:79:8)
+  RootLayout (app/_layout.tsx:46:3)

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import {
   View,
   Text,
@@ -9,6 +9,9 @@ import {
   Alert,
   SafeAreaView,
   Modal,
+  Keyboard,
+  InputAccessoryView,
+  Platform,
 } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import { useApp } from '@/context/AppContext';
@@ -17,7 +20,7 @@ import Colors from '@/constants/Colors';
 import { useColorScheme } from '@/components/useColorScheme';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { ACCENT_COLORS, AppTheme, REMINDER_INTERVALS, ReminderInterval } from '@/types';
-import { generateTestData, clearAllData } from '@/utils/storage';
+import { generateTestData, clearAllLogs, clearTodayLog } from '@/utils/storage';
 import { requestNotificationPermissions, getScheduledReminderCount } from '@/utils/notifications';
 
 const __DEV_MODE__ = true; // Toggle this to show/hide dev tools
@@ -110,19 +113,19 @@ export default function ProfileScreen() {
     }
   };
 
-  const handleClearAllData = () => {
+  const handleClearAllLogs = () => {
     Alert.alert(
-      'Clear All Data',
-      'This will delete ALL your rules and logs. Are you sure?',
+      'Clear All Logs',
+      'This will delete all your daily logs but keep your rules. Are you sure?',
       [
         { text: 'Cancel', style: 'cancel' },
         {
-          text: 'Clear Everything',
+          text: 'Clear Logs',
           style: 'destructive',
           onPress: async () => {
-            await clearAllData();
+            await clearAllLogs();
             await refreshData();
-            Alert.alert('Done', 'All data cleared.');
+            Alert.alert('Done', 'All logs cleared. Rules preserved.');
           },
         },
       ]
@@ -158,10 +161,18 @@ export default function ProfileScreen() {
     updateNotificationSettings({ interval });
   };
 
+  const scrollViewRef = useRef<ScrollView>(null);
+  const addRuleInputRef = useRef<TextInput>(null);
+
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
-      <ScrollView contentContainerStyle={styles.scrollContent}>
-        <Text style={[styles.screenTitle, { color: colors.text }]}>Settings</Text>
+        <ScrollView
+          ref={scrollViewRef}
+          contentContainerStyle={styles.scrollContent}
+          keyboardShouldPersistTaps="handled"
+          automaticallyAdjustKeyboardInsets
+        >
+          <Text style={[styles.screenTitle, { color: colors.text }]}>Settings</Text>
 
         {/* App Theme Section */}
         <View style={[styles.section, { backgroundColor: colors.cardBackground }]}>
@@ -384,6 +395,7 @@ export default function ProfileScreen() {
 
           <View style={styles.addRuleContainer}>
             <TextInput
+              ref={addRuleInputRef}
               style={[
                 styles.addInput,
                 { color: colors.text, borderColor: colors.border, backgroundColor: colors.background },
@@ -393,6 +405,13 @@ export default function ProfileScreen() {
               value={newRuleText}
               onChangeText={setNewRuleText}
               onSubmitEditing={handleAddRule}
+              onFocus={() => {
+                setTimeout(() => {
+                  addRuleInputRef.current?.measureInWindow((x, y) => {
+                    scrollViewRef.current?.scrollTo({ y: y - 150, animated: true });
+                  });
+                }, 100);
+              }}
             />
             <Pressable
               style={[styles.addButton, { backgroundColor: colors.green }]}
@@ -511,15 +530,27 @@ export default function ProfileScreen() {
             </Pressable>
 
             <Pressable
+              style={[styles.devButton, { backgroundColor: colors.warning }]}
+              onPress={async () => {
+                await clearTodayLog();
+                await refreshData();
+                Alert.alert('Done', "Today's log cleared.");
+              }}
+            >
+              <FontAwesome name="eraser" size={16} color="white" />
+              <Text style={styles.devButtonText}>Clear Today's Log</Text>
+            </Pressable>
+
+            <Pressable
               style={[styles.devButton, { backgroundColor: colors.red }]}
-              onPress={handleClearAllData}
+              onPress={handleClearAllLogs}
             >
               <FontAwesome name="trash" size={16} color="white" />
-              <Text style={styles.devButtonText}>Clear All Data</Text>
+              <Text style={styles.devButtonText}>Clear All Logs</Text>
             </Pressable>
           </View>
         )}
-      </ScrollView>
+        </ScrollView>
     </SafeAreaView>
   );
 }
@@ -529,7 +560,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    paddingBottom: 40,
+    paddingBottom: 120,
   },
   screenTitle: {
     fontSize: 28,

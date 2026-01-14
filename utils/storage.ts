@@ -52,6 +52,7 @@ export async function getAppData(): Promise<AppData> {
       const parsed = JSON.parse(data);
       // Dedupe rules by ID (fix for duplicate key bug)
       if (parsed.rules && Array.isArray(parsed.rules)) {
+        const originalLength = parsed.rules.length;
         const seen = new Set<string>();
         parsed.rules = parsed.rules.filter((rule: Rule) => {
           if (seen.has(rule.id)) {
@@ -60,6 +61,10 @@ export async function getAppData(): Promise<AppData> {
           seen.add(rule.id);
           return true;
         });
+        // If duplicates were removed, persist the cleaned data
+        if (parsed.rules.length < originalLength) {
+          await AsyncStorage.setItem(STORAGE_KEYS.APP_DATA, JSON.stringify(parsed));
+        }
       }
       return parsed;
     }
@@ -250,10 +255,21 @@ export async function generateTestData(days: number = 75): Promise<void> {
   await saveAppData(data);
 }
 
-// DEV MODE: Clear all test data
-export async function clearAllData(): Promise<void> {
-  await AsyncStorage.removeItem(STORAGE_KEYS.APP_DATA);
-  await AsyncStorage.removeItem(STORAGE_KEYS.WIDGET_SETTINGS);
+// DEV MODE: Clear all logs (preserves rules)
+export async function clearAllLogs(): Promise<void> {
+  const data = await getAppData();
+  data.logs = {};
+  await saveAppData(data);
+}
+
+// DEV MODE: Clear today's log only
+export async function clearTodayLog(): Promise<void> {
+  const data = await getAppData();
+  const today = new Date().toISOString().split('T')[0];
+  if (data.logs[today]) {
+    delete data.logs[today];
+    await saveAppData(data);
+  }
 }
 
 // Notification settings management
