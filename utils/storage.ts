@@ -30,14 +30,12 @@ const DEFAULT_NOTIFICATION_SETTINGS: NotificationSettings = {
 };
 
 // Helper to sync data to App Groups for widget access (iOS only)
-async function syncToWidget(key: string, data: string): Promise<void> {
+function syncToWidget(key: string, data: string): void {
   if (Platform.OS === 'ios') {
     try {
-      // expo-widgets provides SharedGroupPreferences
-      const SharedGroupPreferences = require('expo-widgets').SharedGroupPreferences;
-      if (SharedGroupPreferences) {
-        await SharedGroupPreferences.setItem(key, data, APP_GROUP);
-      }
+      const { ExtensionStorage } = require('@bacons/apple-targets');
+      const storage = new ExtensionStorage(APP_GROUP);
+      storage.set(key, data);
     } catch (error) {
       // Silently fail if widget sync fails - app should still work
       console.warn('Widget sync failed:', error);
@@ -80,7 +78,7 @@ export async function saveAppData(data: AppData): Promise<void> {
     const jsonData = JSON.stringify(data);
     await AsyncStorage.setItem(STORAGE_KEYS.APP_DATA, jsonData);
     // Sync to widget
-    await syncToWidget(STORAGE_KEYS.APP_DATA, jsonData);
+    syncToWidget(STORAGE_KEYS.APP_DATA, jsonData);
   } catch (error) {
     console.error('Error saving app data:', error);
   }
@@ -162,7 +160,7 @@ export async function saveWidgetSettings(settings: WidgetSettings): Promise<void
     const jsonData = JSON.stringify(settings);
     await AsyncStorage.setItem(STORAGE_KEYS.WIDGET_SETTINGS, jsonData);
     // Sync to widget
-    await syncToWidget(STORAGE_KEYS.WIDGET_SETTINGS, jsonData);
+    syncToWidget(STORAGE_KEYS.WIDGET_SETTINGS, jsonData);
   } catch (error) {
     console.error('Error saving widget settings:', error);
   }
@@ -191,13 +189,11 @@ export async function saveAppTheme(theme: AppTheme): Promise<void> {
 }
 
 // Force refresh widget timeline (call after data changes)
-export async function reloadWidget(): Promise<void> {
+export function reloadWidget(): void {
   if (Platform.OS === 'ios') {
     try {
-      const { reloadAllTimelines } = require('expo-widgets');
-      if (reloadAllTimelines) {
-        await reloadAllTimelines();
-      }
+      const { ExtensionStorage } = require('@bacons/apple-targets');
+      ExtensionStorage.reloadWidget();
     } catch (error) {
       console.warn('Widget reload failed:', error);
     }
