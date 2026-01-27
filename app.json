@@ -21,6 +21,9 @@
         "com.apple.security.application-groups": [
           "group.com.samson.tradingtracker"
         ]
+      },
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
       }
     },
     "android": {
@@ -44,6 +47,29 @@
     ],
     "experiments": {
       "typedRoutes": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "build": {
+          "experimental": {
+            "ios": {
+              "appExtensions": [
+                {
+                  "bundleIdentifier": "com.samson.tradingtracker.widget",
+                  "targetName": "TradingTrackerWidget",
+                  "entitlements": {
+                    "com.apple.security.application-groups": [
+                      "group.com.samson.tradingtracker"
+                    ]
+                  }
+                }
+              ]
+            }
+          }
+        },
+        "projectId": "6ba7eaec-53a1-4e69-981e-e1efa8d1ecd9"
+      }
     }
   }
 }
