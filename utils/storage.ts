@@ -188,6 +188,25 @@ export async function saveAppTheme(theme: AppTheme): Promise<void> {
   }
 }
 
+// Sync all current data to widget (call on app startup to ensure widget has latest data)
+export async function syncWidgetData(): Promise<void> {
+  if (Platform.OS === 'ios') {
+    try {
+      const appData = await AsyncStorage.getItem(STORAGE_KEYS.APP_DATA);
+      if (appData) {
+        syncToWidget(STORAGE_KEYS.APP_DATA, appData);
+      }
+      const widgetSettings = await AsyncStorage.getItem(STORAGE_KEYS.WIDGET_SETTINGS);
+      if (widgetSettings) {
+        syncToWidget(STORAGE_KEYS.WIDGET_SETTINGS, widgetSettings);
+      }
+      reloadWidget();
+    } catch (error) {
+      console.warn('Widget data sync failed:', error);
+    }
+  }
+}
+
 // Force refresh widget timeline (call after data changes)
 export function reloadWidget(): void {
   if (Platform.OS === 'ios') {

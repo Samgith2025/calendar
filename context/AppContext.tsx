@@ -2,7 +2,7 @@ import React, { createContext, useContext, useState, useEffect, useCallback, Rea
 import { AppData, DayLog, Rule, DayStatus, WidgetSettings, NotificationSettings } from '@/types';
 import * as storage from '@/utils/storage';
 import { formatDate, getCurrentDateET, isPastDay, isTodayET, isWeekendDay } from '@/utils/date';
-import { reloadWidget } from '@/utils/storage';
+import { reloadWidget, syncWidgetData } from '@/utils/storage';
 import { scheduleReminders, cancelAllReminders } from '@/utils/notifications';
 
 interface AppContextType {
@@ -52,6 +52,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
       setWidgetSettings(settings);
       const notifSettings = await storage.getNotificationSettings();
       setNotificationSettings(notifSettings);
+      // Ensure widget has latest data on every app launch
+      await syncWidgetData();
     } catch (error) {
       console.error('Error refreshing data:', error);
     } finally {

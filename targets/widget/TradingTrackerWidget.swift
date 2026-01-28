@@ -43,7 +43,8 @@ struct Provider: TimelineProvider {
 
     private func loadLogs() -> [String: DayLog] {
         guard let userDefaults = UserDefaults(suiteName: "group.com.samson.tradingtracker"),
-              let data = userDefaults.data(forKey: "trading_tracker_data"),
+              let jsonString = userDefaults.string(forKey: "trading_tracker_data"),
+              let data = jsonString.data(using: .utf8),
               let appData = try? JSONDecoder().decode(AppData.self, from: data) else {
             return [:]
         }
@@ -52,7 +53,8 @@ struct Provider: TimelineProvider {
 
     private func loadSettings() -> WidgetSettings {
         guard let userDefaults = UserDefaults(suiteName: "group.com.samson.tradingtracker"),
-              let data = userDefaults.data(forKey: "widget_settings"),
+              let jsonString = userDefaults.string(forKey: "widget_settings"),
+              let data = jsonString.data(using: .utf8),
               let settings = try? JSONDecoder().decode(WidgetSettings.self, from: data) else {
             return defaultSettings()
         }

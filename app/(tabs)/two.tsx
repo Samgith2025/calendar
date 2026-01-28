@@ -20,7 +20,7 @@ import Colors from '@/constants/Colors';
 import { useColorScheme } from '@/components/useColorScheme';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { ACCENT_COLORS, AppTheme, REMINDER_INTERVALS, ReminderInterval } from '@/types';
-import { generateTestData, clearAllLogs, clearTodayLog } from '@/utils/storage';
+import { generateTestData, clearAllLogs, clearTodayLog, reloadWidget } from '@/utils/storage';
 import { requestNotificationPermissions, getScheduledReminderCount } from '@/utils/notifications';
 
 const __DEV_MODE__ = true; // Toggle this to show/hide dev tools
@@ -105,6 +105,7 @@ export default function ProfileScreen() {
     try {
       await generateTestData(75);
       await refreshData();
+      reloadWidget();
       Alert.alert('Done', '75 days of test data generated.');
     } catch (error) {
       Alert.alert('Error', 'Failed to generate test data.');
@@ -125,6 +126,7 @@ export default function ProfileScreen() {
           onPress: async () => {
             await clearAllLogs();
             await refreshData();
+            reloadWidget();
             Alert.alert('Done', 'All logs cleared. Rules preserved.');
           },
         },
@@ -534,6 +536,7 @@ export default function ProfileScreen() {
               onPress={async () => {
                 await clearTodayLog();
                 await refreshData();
+                reloadWidget();
                 Alert.alert('Done', "Today's log cleared.");
               }}
             >
