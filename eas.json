@@ -5,7 +5,10 @@
   "build": {
     "development": {
       "developmentClient": true,
-      "distribution": "internal"
+      "distribution": "internal",
+      "env": {
+        "EXPO_NO_CAPABILITY_SYNC": "1"
+      }
     },
     "development-simulator": {
       "developmentClient": true,
@@ -15,9 +18,16 @@
       }
     },
     "preview": {
-      "distribution": "internal"
+      "distribution": "internal",
+      "env": {
+        "EXPO_NO_CAPABILITY_SYNC": "1"
+      }
     },
-    "production": {}
+    "production": {
+      "env": {
+        "EXPO_NO_CAPABILITY_SYNC": "1"
+      }
+    }
   },
   "submit": {
     "production": {}
