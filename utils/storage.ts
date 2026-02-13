@@ -96,7 +96,12 @@ export async function saveRules(rules: Rule[]): Promise<void> {
 }
 
 function generateUniqueId(): string {
-  return `${Date.now()}-${Math.random().toString(36).substring(2, 11)}`;
+  // Use timestamp + high-resolution time + random for better uniqueness
+  const timestamp = Date.now();
+  const perfNow = typeof performance !== 'undefined' ? performance.now() : 0;
+  const random1 = Math.random().toString(36).substring(2, 11);
+  const random2 = Math.random().toString(36).substring(2, 11);
+  return `${timestamp}-${perfNow.toString(36)}-${random1}${random2}`;
 }
 
 export async function addRule(text: string): Promise<Rule> {

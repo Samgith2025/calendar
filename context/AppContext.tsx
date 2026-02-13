@@ -66,18 +66,36 @@ export function AppProvider({ children }: { children: ReactNode }) {
   }, [refreshData]);
 
   const addRule = async (text: string) => {
-    const newRule = await storage.addRule(text);
-    setRules((prev) => [...prev, newRule]);
+    try {
+      const newRule = await storage.addRule(text);
+      setRules((prev) => [...prev, newRule]);
+      await syncWidgetData();
+    } catch (error) {
+      console.error('Failed to add rule:', error);
+      throw error;
+    }
   };
 
   const updateRule = async (id: string, text: string) => {
-    await storage.updateRule(id, text);
-    setRules((prev) => prev.map((r) => (r.id === id ? { ...r, text } : r)));
+    try {
+      await storage.updateRule(id, text);
+      setRules((prev) => prev.map((r) => (r.id === id ? { ...r, text } : r)));
+      await syncWidgetData();
+    } catch (error) {
+      console.error('Failed to update rule:', error);
+      throw error;
+    }
   };
 
   const deleteRule = async (id: string) => {
-    await storage.deleteRule(id);
-    setRules((prev) => prev.filter((r) => r.id !== id));
+    try {
+      await storage.deleteRule(id);
+      setRules((prev) => prev.filter((r) => r.id !== id));
+      await syncWidgetData();
+    } catch (error) {
+      console.error('Failed to delete rule:', error);
+      throw error;
+    }
   };
 
   const submitDayLog = async (ruleResults: Record<string, boolean>) => {

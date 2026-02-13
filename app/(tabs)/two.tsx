@@ -72,8 +72,12 @@ export default function ProfileScreen() {
       Alert.alert('Error', 'Please enter a rule.');
       return;
     }
-    await addRule(newRuleText.trim());
-    setNewRuleText('');
+    try {
+      await addRule(newRuleText.trim());
+      setNewRuleText('');
+    } catch (error) {
+      Alert.alert('Error', 'Failed to save rule. Please try again.');
+    }
   };
 
   const handleEditRule = (id: string, text: string) => {
@@ -87,9 +91,13 @@ export default function ProfileScreen() {
       return;
     }
     if (editingRuleId) {
-      await updateRule(editingRuleId, editingText.trim());
-      setEditingRuleId(null);
-      setEditingText('');
+      try {
+        await updateRule(editingRuleId, editingText.trim());
+        setEditingRuleId(null);
+        setEditingText('');
+      } catch (error) {
+        Alert.alert('Error', 'Failed to update rule. Please try again.');
+      }
     }
   };
 
