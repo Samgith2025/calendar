@@ -1,7 +1,7 @@
 import React, { useMemo } from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet, Pressable } from 'react-native';
 import { useApp } from '@/context/AppContext';
-import { formatDate, isTodayET, getCurrentDateET } from '@/utils/date';
+import { formatDate, isTodayET, isPastDay, getCurrentDateET } from '@/utils/date';
 import Colors, { STATUS_COLORS } from '@/constants/Colors';
 import { useColorScheme } from '@/components/useColorScheme';
 import { DayStatus } from '@/types';
@@ -16,13 +16,16 @@ interface WeekRow {
 
 interface MonthGridProps {
   month: Date;
+  onDayPress?: (date: Date) => void;
 }
 
-export function MonthGrid({ month }: MonthGridProps) {
+export function MonthGrid({ month, onDayPress }: MonthGridProps) {
   const { getDayStatus, logs } = useApp();
   const colorScheme = useColorScheme() ?? 'light';
   const colors = Colors[colorScheme];
   const today = getCurrentDateET();
+  const isCurrentMonth =
+    month.getMonth() === today.getMonth() && month.getFullYear() === today.getFullYear();
 
   const weeks = useMemo(() => {
     const monthStart = startOfMonth(month);
@@ -123,19 +126,24 @@ export function MonthGrid({ month }: MonthGridProps) {
             const isToday = isTodayET(day);
             const status = getDayStatus(day);
             const boxColor = getBoxColor(status);
+            const tappable = isCurrentMonth && (isToday || isPastDay(day)) && !!onDayPress;
 
             return (
               <View key={formatDate(day)} style={styles.dayCell}>
-                <View
+                <Pressable
                   style={[
                     styles.dayBox,
                     { backgroundColor: boxColor },
                     isToday && [styles.todayBox, { borderColor: colors.blue }],
                   ]}
+                  onPress={tappable ? () => onDayPress(day) : undefined}
                 >
                   {status === 'green' && <Text style={styles.statusIcon}>✓</Text>}
                   {status === 'red' && <Text style={styles.statusIcon}>✗</Text>}
-                </View>
+                </Pressable>
+                <Text style={[styles.dayNumber, { color: tappable ? colors.textSecondary : colors.textSecondary + '50' }]}>
+                  {day.getDate()}
+                </Text>
               </View>
             );
           })}
@@ -209,14 +217,19 @@ const styles = StyleSheet.create({
   },
   dayCell: {
     flex: 1,
-    aspectRatio: 1,
     padding: 1,
+    alignItems: 'center',
   },
   dayBox: {
-    flex: 1,
+    width: '100%',
+    aspectRatio: 1,
     borderRadius: 6,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  dayNumber: {
+    fontSize: 9,
+    marginTop: 1,
   },
   todayBox: {
     borderWidth: 2,

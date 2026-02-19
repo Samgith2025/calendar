@@ -1,50 +1,87 @@
- ERROR  Encountered two children with the same key, `%s`. Keys should be unique so that components maintain their identity across updates. Non-unique keys may cause children to be duplicated and/or omitted — the behavior is unsupported and could change in a future version. 1768405968287-n5krxc5hw 
+✔ Do you want to log in to your Apple account? … yes
 
-Code: DailyChecklist.tsx
-  137 |         const state = ruleStates[rule.id];
-  138 |         return (
-> 139 |           <Pressable
-      |           ^
-  140 |             key={rule.id}
-  141 |             style={[
-  142 |               styles.ruleRow,
-Call Stack
-  rules.map$argument_0 (components/DailyChecklist.tsx:139:11)
-  DailyChecklist (components/DailyChecklist.tsx:136:17)
-  TrackScreen (app/(tabs)/index.tsx:101:11)
-  TabLayout (app/(tabs)/_layout.tsx:20:5)
-  RootLayoutNav (app/_layout.tsx:79:8)
-  RootLayout (app/_layout.tsx:46:3)
- ERROR  Encountered two children with the same key, `%s`. Keys should be unique so that components maintain their identity across updates. Non-unique keys may cause children to be duplicated and/or omitted — the behavior is unsupported and could change in a future version. 1768405968287-n5krxc5hw 
-
-Code: two.tsx
-  345 |
-  346 |           {rules.map((rule) => (
-> 347 |             <View key={rule.id} style={[styles.ruleItem, { borderColor: colors.border }]}>
-      |             ^
-  348 |               {editingRuleId === rule.id ? (
-  349 |                 <View style={styles.editContainer}>
-  350 |                   <TextInput
-Call Stack
-  rules.map$argument_0 (app/(tabs)/two.tsx:347:13)
-  ProfileScreen (app/(tabs)/two.tsx:346:21)
-  TabLayout (app/(tabs)/_layout.tsx:20:5)
-  RootLayoutNav (app/_layout.tsx:79:8)
-  RootLayout (app/_layout.tsx:46:3)
- ERROR  Encountered two children with the same key, `%s`. Keys should be unique so that components maintain their identity across updates. Non-unique keys may cause children to be duplicated and/or omitted — the behavior is unsupported and could change in a future version. 1768405968287-n5krxc5hw 
-
-Code: DailyChecklist.tsx
-  137 |         const state = ruleStates[rule.id];
-  138 |         return (
-> 139 |           <Pressable
-      |           ^
-  140 |             key={rule.id}
-  141 |             style={[
-  142 |               styles.ruleRow,
-Call Stack
-  rules.map$argument_0 (components/DailyChecklist.tsx:139:11)
-  DailyChecklist (components/DailyChecklist.tsx:136:17)
-  TrackScreen (app/(tabs)/index.tsx:101:11)
-  TabLayout (app/(tabs)/_layout.tsx:20:5)
-  RootLayoutNav (app/_layout.tsx:79:8)
-  RootLayout (app/_layout.tsx:46:3)
+› Log in to your Apple Developer account to continue
+✔ Apple ID: … samson.sam.apps@gmail.com
+› Restoring session /Users/samson/.app-store/auth/samson.sam.apps@gmail.com/cookie
+› Team Samson Sam (5KVBK89452)
+› Provider Samson Sam (128186432)
+✔ Logged in Local session
+iOS Credentials           
+Project                   @samsonsam2025/trading-tracker
+                          
+Target                    TradingTracker
+Bundle Identifier         com.samson.tradingtracker
+Apple Team                5KVBK89452 (Samson Sam (Individual))
+                          
+Push Key                  
+Developer Portal ID       J68364A853
+Apple Team                5KVBK89452 (Samson Sam (Individual))
+Updated                   4 months ago
+                          
+                          
+App Store Configuration   
+                          
+Distribution Certificate  
+Serial Number             10E9C66098CD7CD931C8FF6E62B1DD7F
+Expiration Date           Wed, 07 Oct 2026 14:33:02 EDT
+Apple Team                5KVBK89452 (Samson Sam (Individual))
+Updated                   4 months ago
+                          
+Provisioning Profile      
+Developer Portal ID       8YPW39UNCF
+Status                    active
+Expiration                Wed, 07 Oct 2026 14:33:02 EDT
+Apple Team                5KVBK89452 (Samson Sam (Individual))
+Updated                   3 minutes ago
+                          
+                          
+Ad Hoc Configuration      
+                          
+Distribution Certificate  
+Serial Number             10E9C66098CD7CD931C8FF6E62B1DD7F
+Expiration Date           Wed, 07 Oct 2026 14:33:02 EDT
+Apple Team                5KVBK89452 (Samson Sam (Individual))
+Updated                   4 months ago
+                          
+Provisioning Profile      
+Developer Portal ID       Z4DTQRXQ3W
+Status                    active
+Expiration                Wed, 07 Oct 2026 14:33:02 EDT
+Apple Team                5KVBK89452 (Samson Sam (Individual))
+Provisioned devices       - iPhone (UDID: 00008110-00123D460A84801E)
+Updated                   16 days ago
+                          
+                          
+Target                    TradingTrackerWidget
+Bundle Identifier         com.samson.tradingtracker.widget
+Apple Team                5KVBK89452 (Samson Sam (Individual))
+                          
+Push Key                  
+Developer Portal ID       J68364A853
+Apple Team                5KVBK89452 (Samson Sam (Individual))
+Updated                   4 months ago
+                          
+                          
+Ad Hoc Configuration      
+                          
+Distribution Certificate  
+Serial Number             10E9C66098CD7CD931C8FF6E62B1DD7F
+Expiration Date           Wed, 07 Oct 2026 14:33:02 EDT
+Apple Team                5KVBK89452 (Samson Sam (Individual))
+Updated                   4 months ago
+                          
+Provisioning Profile      
+Developer Portal ID       U57BWW34GC
+Status                    active
+Expiration                Wed, 07 Oct 2026 14:33:02 EDT
+Apple Team                5KVBK89452 (Samson Sam (Individual))
+Provisioned devices       - iPhone (UDID: 00008110-00123D460A84801E)
+Updated                   16 days ago
+                          
+? What do you want to do? › - Use arrow-keys. Return to submit.
+❯   Build Credentials: Manage everything needed to build your project
+    Push Notifications: Manage your Apple Push Notifications Key
+    App Store Connect: Manage your API Key
+    credentials.json: Upload/Download credentials between EAS servers and your local json 
+    Go back
+    Exit

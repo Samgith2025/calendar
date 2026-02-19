@@ -6,7 +6,7 @@ import { useColorScheme } from '@/components/useColorScheme';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 
 export function DailyChecklist() {
-  const { rules, todayLog, canEditToday, submitDayLog, markNoTradeDay } = useApp();
+  const { rules, todayLog, canEditToday, submitDayLog, markNoTradeDay, markBrokePlan } = useApp();
   const colorScheme = useColorScheme() ?? 'light';
   const colors = Colors[colorScheme];
 
@@ -59,6 +59,17 @@ export function DailyChecklist() {
       [
         { text: 'Cancel', style: 'cancel' },
         { text: 'Confirm', onPress: () => markNoTradeDay() },
+      ]
+    );
+  };
+
+  const handleBrokePlan = () => {
+    Alert.alert(
+      'Broke My Plan',
+      'Mark today as not following your plan?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Confirm', style: 'destructive', onPress: () => markBrokePlan() },
       ]
     );
   };
@@ -170,14 +181,25 @@ export function DailyChecklist() {
           <Text style={styles.submitButtonText}>Submit</Text>
         </Pressable>
 
-        <Pressable
-          style={[styles.noTradeButton, { borderColor: colors.border }]}
-          onPress={handleNoTrade}
-        >
-          <Text style={[styles.noTradeButtonText, { color: colors.textSecondary }]}>
-            No Trade Today
-          </Text>
-        </Pressable>
+        <View style={styles.secondaryButtons}>
+          <Pressable
+            style={[styles.noTradeButton, { borderColor: colors.border }]}
+            onPress={handleNoTrade}
+          >
+            <Text style={[styles.noTradeButtonText, { color: colors.textSecondary }]}>
+              No Trade
+            </Text>
+          </Pressable>
+
+          <Pressable
+            style={[styles.noTradeButton, { borderColor: colors.red + '60' }]}
+            onPress={handleBrokePlan}
+          >
+            <Text style={[styles.noTradeButtonText, { color: colors.red }]}>
+              Broke Plan
+            </Text>
+          </Pressable>
+        </View>
       </View>
     </View>
   );
@@ -229,7 +251,12 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '600',
   },
+  secondaryButtons: {
+    flexDirection: 'row',
+    gap: 8,
+  },
   noTradeButton: {
+    flex: 1,
     paddingVertical: 12,
     borderRadius: 10,
     alignItems: 'center',

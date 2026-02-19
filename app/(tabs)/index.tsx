@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, Pressable, SafeAreaView } from 'react-native';
 import { useApp } from '@/context/AppContext';
 import { MonthGrid } from '@/components/MonthGrid';
+import { DayDetailModal } from '@/components/DayDetailModal';
 import { StatsCard } from '@/components/StatsCard';
 import { DailyChecklist } from '@/components/DailyChecklist';
 import { DotGridView, ViewMode } from '@/components/DotGridView';
@@ -24,6 +25,7 @@ export default function TrackScreen() {
 
   const [currentMonth, setCurrentMonth] = useState(getCurrentDateET());
   const [viewMode, setViewMode] = useState<ViewMode>('month');
+  const [selectedDay, setSelectedDay] = useState<Date | null>(null);
 
   const goToPreviousMonth = () => {
     setCurrentMonth((prev) => subMonths(prev, 1));
@@ -88,7 +90,7 @@ export default function TrackScreen() {
             <StatsCard month={currentMonth} />
 
             <View style={styles.section}>
-              <MonthGrid month={currentMonth} />
+              <MonthGrid month={currentMonth} onDayPress={setSelectedDay} />
             </View>
           </>
         ) : (
@@ -101,6 +103,8 @@ export default function TrackScreen() {
           <DailyChecklist />
         </View>
       </ScrollView>
+
+      <DayDetailModal date={selectedDay} onClose={() => setSelectedDay(null)} />
     </SafeAreaView>
   );
 }

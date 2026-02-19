@@ -15,7 +15,11 @@ interface AppContextType {
   updateRule: (id: string, text: string) => Promise<void>;
   deleteRule: (id: string) => Promise<void>;
   submitDayLog: (ruleResults: Record<string, boolean>) => Promise<void>;
+  submitDayLogForDate: (date: string, ruleResults: Record<string, boolean>) => Promise<void>;
   markNoTradeDay: () => Promise<void>;
+  markNoTradeDayForDate: (date: string) => Promise<void>;
+  markBrokePlan: () => Promise<void>;
+  markBrokePlanForDate: (date: string) => Promise<void>;
   getDayStatus: (date: Date) => DayStatus;
   updateWidgetSettings: (settings: Partial<WidgetSettings>) => Promise<void>;
   updateNotificationSettings: (settings: Partial<NotificationSettings>) => Promise<void>;
@@ -98,36 +102,59 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const submitDayLog = async (ruleResults: Record<string, boolean>) => {
-    const today = formatDate(getCurrentDateET());
+  const submitDayLogForDate = async (date: string, ruleResults: Record<string, boolean>) => {
     const allFollowed = Object.values(ruleResults).every((v) => v);
     const log: DayLog = {
-      date: today,
+      date,
       status: allFollowed ? 'green' : 'red',
       ruleResults,
       noTradeDay: false,
     };
     await storage.saveDayLog(log);
-    setLogs((prev) => ({ ...prev, [today]: log }));
-    // Cancel reminders since day is now complete
-    await cancelAllReminders();
-    // Refresh widget to show new data
+    setLogs((prev) => ({ ...prev, [date]: log }));
+    if (date === formatDate(getCurrentDateET())) await cancelAllReminders();
     await reloadWidget();
   };
 
-  const markNoTradeDay = async () => {
-    const today = formatDate(getCurrentDateET());
+  const submitDayLog = async (ruleResults: Record<string, boolean>) => {
+    await submitDayLogForDate(formatDate(getCurrentDateET()), ruleResults);
+  };
+
+  const markNoTradeDayForDate = async (date: string) => {
     const log: DayLog = {
-      date: today,
+      date,
       status: 'green',
       noTradeDay: true,
     };
     await storage.saveDayLog(log);
-    setLogs((prev) => ({ ...prev, [today]: log }));
-    // Cancel reminders since day is now complete
-    await cancelAllReminders();
-    // Refresh widget to show new data
+    setLogs((prev) => ({ ...prev, [date]: log }));
+    if (date === formatDate(getCurrentDateET())) await cancelAllReminders();
     await reloadWidget();
+  };
+
+  const markNoTradeDay = async () => {
+    await markNoTradeDayForDate(formatDate(getCurrentDateET()));
+  };
+
+  const markBrokePlanForDate = async (date: string) => {
+    const ruleResults: Record<string, boolean> = {};
+    rules.forEach((rule) => {
+      ruleResults[rule.id] = false;
+    });
+    const log: DayLog = {
+      date,
+      status: 'red',
+      ruleResults,
+      noTradeDay: false,
+    };
+    await storage.saveDayLog(log);
+    setLogs((prev) => ({ ...prev, [date]: log }));
+    if (date === formatDate(getCurrentDateET())) await cancelAllReminders();
+    await reloadWidget();
+  };
+
+  const markBrokePlan = async () => {
+    await markBrokePlanForDate(formatDate(getCurrentDateET()));
   };
 
   const getDayStatus = (date: Date): DayStatus => {
@@ -188,7 +215,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
         updateRule,
         deleteRule,
         submitDayLog,
+        submitDayLogForDate,
         markNoTradeDay,
+        markNoTradeDayForDate,
+        markBrokePlan,
+        markBrokePlanForDate,
         getDayStatus,
         updateWidgetSettings,
         updateNotificationSettings,
