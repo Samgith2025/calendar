@@ -3,7 +3,7 @@ import { AppData, DayLog, Rule, DayStatus, WidgetSettings, NotificationSettings 
 import * as storage from '@/utils/storage';
 import { formatDate, getCurrentDateET, isPastDay, isTodayET, isWeekendDay } from '@/utils/date';
 import { reloadWidget, syncWidgetData } from '@/utils/storage';
-import { scheduleReminders, cancelAllReminders } from '@/utils/notifications';
+import { scheduleReminders, cancelAllReminders, cancelFollowUpReminders } from '@/utils/notifications';
 
 interface AppContextType {
   rules: Rule[];
@@ -112,7 +112,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     };
     await storage.saveDayLog(log);
     setLogs((prev) => ({ ...prev, [date]: log }));
-    if (date === formatDate(getCurrentDateET())) await cancelAllReminders();
+    if (date === formatDate(getCurrentDateET())) await cancelFollowUpReminders();
     await reloadWidget();
   };
 
@@ -128,7 +128,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     };
     await storage.saveDayLog(log);
     setLogs((prev) => ({ ...prev, [date]: log }));
-    if (date === formatDate(getCurrentDateET())) await cancelAllReminders();
+    if (date === formatDate(getCurrentDateET())) await cancelFollowUpReminders();
     await reloadWidget();
   };
 
@@ -149,7 +149,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     };
     await storage.saveDayLog(log);
     setLogs((prev) => ({ ...prev, [date]: log }));
-    if (date === formatDate(getCurrentDateET())) await cancelAllReminders();
+    if (date === formatDate(getCurrentDateET())) await cancelFollowUpReminders();
     await reloadWidget();
   };
 

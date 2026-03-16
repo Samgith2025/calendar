@@ -1,9 +1,11 @@
 import * as Notifications from 'expo-notifications';
 import { Platform } from 'react-native';
 import { NotificationSettings } from '@/types';
-import { isWeekendDay, getCurrentDateET } from './date';
 
-const NOTIFICATION_TAG = 'trading-reminder';
+const NOTIFICATION_ID_BASE = 'trading-reminder-base';
+const NOTIFICATION_ID_FOLLOWUP_PREFIX = 'trading-reminder-followup';
+const MAX_FOLLOWUPS = 63; // iOS allows 64 total pending; reserve 1 for base
+const QUIET_HOUR_END = 22; // Don't schedule past 10 PM
 
 // Configure how notifications appear when app is in foreground
 export function configureNotifications(): void {
@@ -45,127 +47,131 @@ export async function hasNotificationPermissions(): Promise<boolean> {
   return status === 'granted';
 }
 
-// Cancel all scheduled reminder notifications
-export async function cancelAllReminders(): Promise<void> {
-  const scheduled = await Notifications.getAllScheduledNotificationsAsync();
-
-  for (const notification of scheduled) {
-    if (notification.identifier.startsWith(NOTIFICATION_TAG)) {
-      await Notifications.cancelScheduledNotificationAsync(notification.identifier);
-    }
-  }
-
-  // Clear badge when canceling reminders
-  await Notifications.setBadgeCountAsync(0);
-}
-
 // Parse time string "HH:mm" to hours and minutes
 function parseTime(timeStr: string): { hours: number; minutes: number } {
   const [hours, minutes] = timeStr.split(':').map(Number);
   return { hours, minutes };
 }
 
-// Schedule persistent reminders for today
+// Cancel all scheduled reminders (base + follow-ups) — used on settings change
+export async function cancelAllReminders(): Promise<void> {
+  try {
+    const scheduled = await Notifications.getAllScheduledNotificationsAsync();
+    for (const notification of scheduled) {
+      if (
+        notification.identifier === NOTIFICATION_ID_BASE ||
+        notification.identifier.startsWith(NOTIFICATION_ID_FOLLOWUP_PREFIX)
+      ) {
+        await Notifications.cancelScheduledNotificationAsync(notification.identifier);
+      }
+    }
+    await Notifications.setBadgeCountAsync(0);
+  } catch (error) {
+    console.warn('[Notifications] Failed to cancel all:', error);
+  }
+}
+
+// Cancel only follow-up reminders — called when today's log is submitted
+// Leaves the base notification intact so it fires again tomorrow
+export async function cancelFollowUpReminders(): Promise<void> {
+  try {
+    const scheduled = await Notifications.getAllScheduledNotificationsAsync();
+    for (const notification of scheduled) {
+      if (notification.content.data?.scope === 'follow_up') {
+        await Notifications.cancelScheduledNotificationAsync(notification.identifier);
+      }
+    }
+  } catch (error) {
+    console.warn('[Notifications] Failed to cancel follow-ups:', error);
+  }
+}
+
+// Schedule daily reminders using DAILY triggers.
+// These fire at the same time every day without the app needing to be open.
+// Base notification is permanent — fires every day at startTime.
+// Follow-ups fire at each interval slot and are cancelled when today's log is submitted.
+// When the app opens the next day, this function reschedules the follow-ups.
 export async function scheduleReminders(
   settings: NotificationSettings,
   isTodayLogComplete: boolean
 ): Promise<number> {
-  // Cancel any existing reminders first
   await cancelAllReminders();
 
-  // Don't schedule if:
-  // - Notifications disabled
-  // - Today's log is already complete
-  // - Today is a weekend (no trading)
-  if (!settings.enabled || isTodayLogComplete) {
-    return 0;
-  }
+  if (!settings.enabled) return 0;
 
-  const now = getCurrentDateET();
-
-  if (isWeekendDay(now)) {
-    return 0;
-  }
-
-  // Check permissions
   const hasPermission = await hasNotificationPermissions();
-  if (!hasPermission) {
-    return 0;
-  }
+  if (!hasPermission) return 0;
 
   const { hours: startHour, minutes: startMin } = parseTime(settings.startTime);
   const { hours: endHour, minutes: endMin } = parseTime(settings.endTime);
 
-  // Create start and end Date objects for today
-  const startDate = new Date(now);
-  startDate.setHours(startHour, startMin, 0, 0);
+  // Always schedule the base — fires every day at startTime regardless of task state
+  await Notifications.scheduleNotificationAsync({
+    identifier: NOTIFICATION_ID_BASE,
+    content: {
+      title: 'Trading Rules Check',
+      body: 'Time to log your trading rules for today!',
+      sound: true,
+      badge: 1,
+      data: { type: 'daily_reminder', scope: 'base', index: 0 },
+      ...(Platform.OS === 'android' && { channelId: 'reminders' }),
+    },
+    trigger: {
+      type: Notifications.SchedulableTriggerInputTypes.DAILY,
+      hour: startHour,
+      minute: startMin,
+    },
+  });
 
-  const endDate = new Date(now);
-  endDate.setHours(endHour, endMin, 0, 0);
+  // If today's log is already complete, skip follow-ups.
+  // They'll be rescheduled automatically when the app opens tomorrow.
+  if (isTodayLogComplete) return 1;
 
-  // If we're past end time, don't schedule
-  if (now >= endDate) {
-    return 0;
-  }
+  // Schedule follow-ups at each interval slot until endTime or quiet hours
+  const endTotalMinutes = endHour * 60 + endMin;
+  const cutoffMinutes = Math.min(endTotalMinutes, QUIET_HOUR_END * 60);
 
-  // Start from now or startTime, whichever is later
-  let nextNotification: Date;
-  if (now > startDate) {
-    // Round up to next interval boundary
-    nextNotification = new Date(now);
-    const minutes = nextNotification.getMinutes();
-    const roundedMinutes = Math.ceil(minutes / settings.interval) * settings.interval;
-    nextNotification.setMinutes(roundedMinutes, 0, 0);
+  const promises: Promise<string>[] = [];
+  let index = 1;
+  let totalMinutes = startHour * 60 + startMin + settings.interval;
 
-    // If rounding pushed us to next hour, handle that
-    if (roundedMinutes >= 60) {
-      nextNotification.setHours(nextNotification.getHours() + Math.floor(roundedMinutes / 60));
-      nextNotification.setMinutes(roundedMinutes % 60);
-    }
-  } else {
-    nextNotification = new Date(startDate);
-  }
+  while (totalMinutes < cutoffMinutes && index <= MAX_FOLLOWUPS) {
+    const hour = Math.floor(totalMinutes / 60) % 24;
+    const minute = totalMinutes % 60;
 
-  // Schedule notifications until end time (max 50 to stay well under iOS limit)
-  let count = 0;
-  const maxNotifications = 50;
-  const notifications: Promise<string>[] = [];
-
-  while (nextNotification < endDate && count < maxNotifications) {
-    const secondsUntil = Math.max(1, Math.floor((nextNotification.getTime() - now.getTime()) / 1000));
-
-    // Only schedule if in the future
-    if (secondsUntil > 0) {
-      const notification = Notifications.scheduleNotificationAsync({
-        identifier: `${NOTIFICATION_TAG}-${count}`,
+    promises.push(
+      Notifications.scheduleNotificationAsync({
+        identifier: `${NOTIFICATION_ID_FOLLOWUP_PREFIX}-${index}`,
         content: {
           title: 'Trading Rules Check',
           body: "Did you follow your trading rules today? Don't forget to log!",
           sound: true,
           badge: 1,
+          data: { type: 'daily_reminder', scope: 'follow_up', index },
           ...(Platform.OS === 'android' && { channelId: 'reminders' }),
         },
         trigger: {
-          type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL,
-          seconds: secondsUntil,
+          type: Notifications.SchedulableTriggerInputTypes.DAILY,
+          hour,
+          minute,
         },
-      });
-      notifications.push(notification);
-      count++;
-    }
+      })
+    );
 
-    // Move to next interval
-    nextNotification = new Date(nextNotification.getTime() + settings.interval * 60 * 1000);
+    totalMinutes += settings.interval;
+    index++;
   }
 
-  // Wait for all to be scheduled
-  await Promise.all(notifications);
-
-  return count;
+  await Promise.all(promises);
+  return promises.length + 1; // +1 for base
 }
 
 // Get count of currently scheduled reminders
 export async function getScheduledReminderCount(): Promise<number> {
   const scheduled = await Notifications.getAllScheduledNotificationsAsync();
-  return scheduled.filter((n) => n.identifier.startsWith(NOTIFICATION_TAG)).length;
+  return scheduled.filter(
+    (n) =>
+      n.identifier === NOTIFICATION_ID_BASE ||
+      n.identifier.startsWith(NOTIFICATION_ID_FOLLOWUP_PREFIX)
+  ).length;
 }
