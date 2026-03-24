@@ -1,6 +1,7 @@
 import * as Notifications from 'expo-notifications';
 import { Platform } from 'react-native';
 import { NotificationSettings } from '@/types';
+import { getCurrentDateET } from '@/utils/date';
 
 const NOTIFICATION_ID_BASE = 'trading-reminder-base';
 const NOTIFICATION_ID_FOLLOWUP_PREFIX = 'trading-reminder-followup';
@@ -137,7 +138,7 @@ export async function scheduleReminders(
   if (isTodayLogComplete) return WEEKDAYS.length;
 
   // Skip follow-ups on weekends — no trading happens, nothing to log.
-  const todayDow = new Date().getDay(); // 0=Sun, 6=Sat
+  const todayDow = getCurrentDateET().getDay(); // 0=Sun, 6=Sat
   if (todayDow === 0 || todayDow === 6) return WEEKDAYS.length;
 
   // Schedule follow-ups at each interval slot until endTime or quiet hours
