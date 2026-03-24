@@ -127,6 +127,7 @@ export function MonthGrid({ month, onDayPress }: MonthGridProps) {
             const status = getDayStatus(day);
             const boxColor = getBoxColor(status);
             const tappable = isCurrentMonth && (isToday || isPastDay(day)) && !!onDayPress;
+            const isNoTradeDay = logs[formatDate(day)]?.noTradeDay === true;
 
             return (
               <View key={formatDate(day)} style={styles.dayCell}>
@@ -138,7 +139,7 @@ export function MonthGrid({ month, onDayPress }: MonthGridProps) {
                   ]}
                   onPress={tappable ? () => onDayPress(day) : undefined}
                 >
-                  {status === 'green' && <Text style={styles.statusIcon}>✓</Text>}
+                  {status === 'green' && <Text style={styles.statusIcon}>{isNoTradeDay ? 'NT' : '✓'}</Text>}
                   {status === 'red' && <Text style={styles.statusIcon}>✗</Text>}
                 </Pressable>
                 <Text style={[styles.dayNumber, { color: tappable ? colors.textSecondary : colors.textSecondary + '50' }]}>

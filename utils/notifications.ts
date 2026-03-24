@@ -4,8 +4,11 @@ import { NotificationSettings } from '@/types';
 
 const NOTIFICATION_ID_BASE = 'trading-reminder-base';
 const NOTIFICATION_ID_FOLLOWUP_PREFIX = 'trading-reminder-followup';
-const MAX_FOLLOWUPS = 63; // iOS allows 64 total pending; reserve 1 for base
+// iOS allows 64 total pending; 5 base (one per weekday Mon-Fri) + up to 58 follow-ups + 1 buffer
+const MAX_FOLLOWUPS = 58;
 const QUIET_HOUR_END = 22; // Don't schedule past 10 PM
+// Weekday numbers used by expo-notifications (1=Sun, 2=Mon ... 6=Fri, 7=Sat)
+const WEEKDAYS = [2, 3, 4, 5, 6] as const; // Mon–Fri
 
 // Configure how notifications appear when app is in foreground
 export function configureNotifications(): void {
@@ -59,7 +62,7 @@ export async function cancelAllReminders(): Promise<void> {
     const scheduled = await Notifications.getAllScheduledNotificationsAsync();
     for (const notification of scheduled) {
       if (
-        notification.identifier === NOTIFICATION_ID_BASE ||
+        notification.identifier.startsWith(NOTIFICATION_ID_BASE) ||
         notification.identifier.startsWith(NOTIFICATION_ID_FOLLOWUP_PREFIX)
       ) {
         await Notifications.cancelScheduledNotificationAsync(notification.identifier);
@@ -105,27 +108,37 @@ export async function scheduleReminders(
   const { hours: startHour, minutes: startMin } = parseTime(settings.startTime);
   const { hours: endHour, minutes: endMin } = parseTime(settings.endTime);
 
-  // Always schedule the base — fires every day at startTime regardless of task state
-  await Notifications.scheduleNotificationAsync({
-    identifier: NOTIFICATION_ID_BASE,
-    content: {
-      title: 'Trading Rules Check',
-      body: 'Time to log your trading rules for today!',
-      sound: true,
-      badge: 1,
-      data: { type: 'daily_reminder', scope: 'base', index: 0 },
-      ...(Platform.OS === 'android' && { channelId: 'reminders' }),
-    },
-    trigger: {
-      type: Notifications.SchedulableTriggerInputTypes.DAILY,
-      hour: startHour,
-      minute: startMin,
-    },
-  });
+  // Schedule base notification for each weekday (Mon–Fri) using WEEKLY triggers.
+  // This ensures the OS never fires on Saturday or Sunday.
+  await Promise.all(
+    WEEKDAYS.map((weekday) =>
+      Notifications.scheduleNotificationAsync({
+        identifier: `${NOTIFICATION_ID_BASE}-${weekday}`,
+        content: {
+          title: 'Trading Rules Check',
+          body: 'Time to log your trading rules for today!',
+          sound: true,
+          badge: 1,
+          data: { type: 'daily_reminder', scope: 'base', index: 0 },
+          ...(Platform.OS === 'android' && { channelId: 'reminders' }),
+        },
+        trigger: {
+          type: Notifications.SchedulableTriggerInputTypes.WEEKLY,
+          weekday,
+          hour: startHour,
+          minute: startMin,
+        },
+      })
+    )
+  );
 
   // If today's log is already complete, skip follow-ups.
   // They'll be rescheduled automatically when the app opens tomorrow.
-  if (isTodayLogComplete) return 1;
+  if (isTodayLogComplete) return WEEKDAYS.length;
+
+  // Skip follow-ups on weekends — no trading happens, nothing to log.
+  const todayDow = new Date().getDay(); // 0=Sun, 6=Sat
+  if (todayDow === 0 || todayDow === 6) return WEEKDAYS.length;
 
   // Schedule follow-ups at each interval slot until endTime or quiet hours
   const endTotalMinutes = endHour * 60 + endMin;
@@ -163,7 +176,7 @@ export async function scheduleReminders(
   }
 
   await Promise.all(promises);
-  return promises.length + 1; // +1 for base
+  return promises.length + WEEKDAYS.length;
 }
 
 // Get count of currently scheduled reminders
@@ -171,7 +184,7 @@ export async function getScheduledReminderCount(): Promise<number> {
   const scheduled = await Notifications.getAllScheduledNotificationsAsync();
   return scheduled.filter(
     (n) =>
-      n.identifier === NOTIFICATION_ID_BASE ||
+      n.identifier.startsWith(NOTIFICATION_ID_BASE) ||
       n.identifier.startsWith(NOTIFICATION_ID_FOLLOWUP_PREFIX)
   ).length;
 }
