@@ -138,39 +138,45 @@ export async function scheduleReminders(
   if (isTodayLogComplete) return WEEKDAYS.length;
 
   // Skip follow-ups on weekends — no trading happens, nothing to log.
-  const todayDow = getCurrentDateET().getDay(); // 0=Sun, 6=Sat
+  const now = getCurrentDateET();
+  const todayDow = now.getDay(); // 0=Sun, 6=Sat
   if (todayDow === 0 || todayDow === 6) return WEEKDAYS.length;
 
-  // Schedule follow-ups at each interval slot until endTime or quiet hours
+  // Schedule follow-ups as one-time triggers for TODAY only.
+  // This means completing the task cancels only today's — tomorrow's are set up fresh when the app opens.
   const endTotalMinutes = endHour * 60 + endMin;
   const cutoffMinutes = Math.min(endTotalMinutes, QUIET_HOUR_END * 60);
+  const nowMinutes = now.getHours() * 60 + now.getMinutes();
 
   const promises: Promise<string>[] = [];
   let index = 1;
   let totalMinutes = startHour * 60 + startMin + settings.interval;
 
   while (totalMinutes < cutoffMinutes && index <= MAX_FOLLOWUPS) {
-    const hour = Math.floor(totalMinutes / 60) % 24;
-    const minute = totalMinutes % 60;
+    // Only schedule follow-ups that are still in the future
+    if (totalMinutes > nowMinutes) {
+      const hour = Math.floor(totalMinutes / 60) % 24;
+      const minute = totalMinutes % 60;
+      const fireDate = new Date(now.getFullYear(), now.getMonth(), now.getDate(), hour, minute, 0);
 
-    promises.push(
-      Notifications.scheduleNotificationAsync({
-        identifier: `${NOTIFICATION_ID_FOLLOWUP_PREFIX}-${index}`,
-        content: {
-          title: 'Trading Rules Check',
-          body: "Did you follow your trading rules today? Don't forget to log!",
-          sound: true,
-          badge: 1,
-          data: { type: 'daily_reminder', scope: 'follow_up', index },
-          ...(Platform.OS === 'android' && { channelId: 'reminders' }),
-        },
-        trigger: {
-          type: Notifications.SchedulableTriggerInputTypes.DAILY,
-          hour,
-          minute,
-        },
-      })
-    );
+      promises.push(
+        Notifications.scheduleNotificationAsync({
+          identifier: `${NOTIFICATION_ID_FOLLOWUP_PREFIX}-${index}`,
+          content: {
+            title: 'Trading Rules Check',
+            body: "Did you follow your trading rules today? Don't forget to log!",
+            sound: true,
+            badge: 1,
+            data: { type: 'daily_reminder', scope: 'follow_up', index },
+            ...(Platform.OS === 'android' && { channelId: 'reminders' }),
+          },
+          trigger: {
+            type: Notifications.SchedulableTriggerInputTypes.DATE,
+            date: fireDate,
+          },
+        })
+      );
+    }
 
     totalMinutes += settings.interval;
     index++;
