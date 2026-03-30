@@ -1,13 +1,14 @@
 import * as Notifications from 'expo-notifications';
 import { Platform } from 'react-native';
 import { NotificationSettings } from '@/types';
-import { getCurrentDateET } from '@/utils/date';
+import { getCurrentDateET, formatDate } from '@/utils/date';
 
 const NOTIFICATION_ID_BASE = 'trading-reminder-base';
 const NOTIFICATION_ID_FOLLOWUP_PREFIX = 'trading-reminder-followup';
 // iOS allows 64 total pending; 5 base (one per weekday Mon-Fri) + up to 58 follow-ups + 1 buffer
-const MAX_FOLLOWUPS = 58;
+const MAX_FOLLOWUP_SLOTS = 58;
 const QUIET_HOUR_END = 22; // Don't schedule past 10 PM
+const MAX_DAYS_AHEAD = 14; // Calendar days to look ahead when pre-scheduling follow-ups
 // Weekday numbers used by expo-notifications (1=Sun, 2=Mon ... 6=Fri, 7=Sat)
 const WEEKDAYS = [2, 3, 4, 5, 6] as const; // Mon–Fri
 
@@ -75,13 +76,13 @@ export async function cancelAllReminders(): Promise<void> {
   }
 }
 
-// Cancel only follow-up reminders — called when today's log is submitted
-// Leaves the base notification intact so it fires again tomorrow
-export async function cancelFollowUpReminders(): Promise<void> {
+// Cancel only today's follow-up reminders — called when today's log is submitted.
+// Future days' follow-ups remain queued in the OS so they fire without the app opening.
+export async function cancelFollowUpReminders(todayStr: string): Promise<void> {
   try {
     const scheduled = await Notifications.getAllScheduledNotificationsAsync();
     for (const notification of scheduled) {
-      if (notification.content.data?.scope === 'follow_up') {
+      if (notification.identifier.startsWith(`${NOTIFICATION_ID_FOLLOWUP_PREFIX}-${todayStr}-`)) {
         await Notifications.cancelScheduledNotificationAsync(notification.identifier);
       }
     }
@@ -90,11 +91,11 @@ export async function cancelFollowUpReminders(): Promise<void> {
   }
 }
 
-// Schedule daily reminders using DAILY triggers.
-// These fire at the same time every day without the app needing to be open.
-// Base notification is permanent — fires every day at startTime.
-// Follow-ups fire at each interval slot and are cancelled when today's log is submitted.
-// When the app opens the next day, this function reschedules the follow-ups.
+// Schedule reminders for today and upcoming weekdays.
+// Base notification: 5 WEEKLY triggers (Mon-Fri), permanent, fire every week at startTime.
+// Follow-ups: one-time DATE triggers pre-scheduled across the next several weekdays so
+// they fire without the app needing to open. Completing today's log cancels only that
+// day's follow-ups — future days remain untouched in the OS queue.
 export async function scheduleReminders(
   settings: NotificationSettings,
   isTodayLogComplete: boolean
@@ -133,41 +134,60 @@ export async function scheduleReminders(
     )
   );
 
-  // If today's log is already complete, skip follow-ups.
-  // They'll be rescheduled automatically when the app opens tomorrow.
-  if (isTodayLogComplete) return WEEKDAYS.length;
-
-  // Skip follow-ups on weekends — no trading happens, nothing to log.
-  const now = getCurrentDateET();
-  const todayDow = now.getDay(); // 0=Sun, 6=Sat
-  if (todayDow === 0 || todayDow === 6) return WEEKDAYS.length;
-
-  // Schedule follow-ups as one-time triggers for TODAY only.
-  // This means completing the task cancels only today's — tomorrow's are set up fresh when the app opens.
+  // Build the list of follow-up time slots within a day
   const endTotalMinutes = endHour * 60 + endMin;
   const cutoffMinutes = Math.min(endTotalMinutes, QUIET_HOUR_END * 60);
+
+  const followupSlots: { hour: number; minute: number; index: number }[] = [];
+  let slotMinutes = startHour * 60 + startMin + settings.interval;
+  let slotIndex = 1;
+  while (slotMinutes < cutoffMinutes) {
+    followupSlots.push({
+      hour: Math.floor(slotMinutes / 60) % 24,
+      minute: slotMinutes % 60,
+      index: slotIndex,
+    });
+    slotMinutes += settings.interval;
+    slotIndex++;
+  }
+
+  if (followupSlots.length === 0) return WEEKDAYS.length;
+
+  // Pre-schedule follow-ups for today and upcoming weekdays up to the slot limit.
+  // Identifiers include the date (e.g. followup-2026-03-30-1) so per-day cancellation works.
+  const now = getCurrentDateET();
   const nowMinutes = now.getHours() * 60 + now.getMinutes();
-
+  const todayStr = formatDate(now);
   const promises: Promise<string>[] = [];
-  let index = 1;
-  let totalMinutes = startHour * 60 + startMin + settings.interval;
 
-  while (totalMinutes < cutoffMinutes && index <= MAX_FOLLOWUPS) {
-    // Only schedule follow-ups that are still in the future
-    if (totalMinutes > nowMinutes) {
-      const hour = Math.floor(totalMinutes / 60) % 24;
-      const minute = totalMinutes % 60;
-      const fireDate = new Date(now.getFullYear(), now.getMonth(), now.getDate(), hour, minute, 0);
+  for (let dayOffset = 0; dayOffset < MAX_DAYS_AHEAD && promises.length < MAX_FOLLOWUP_SLOTS; dayOffset++) {
+    const date = new Date(now.getFullYear(), now.getMonth(), now.getDate() + dayOffset);
+    const dow = date.getDay(); // 0=Sun, 6=Sat
+    if (dow === 0 || dow === 6) continue;
+
+    const dateStr = formatDate(date);
+    const isToday = dateStr === todayStr;
+
+    // Skip today entirely if log is already complete
+    if (isToday && isTodayLogComplete) continue;
+
+    for (const { hour, minute, index } of followupSlots) {
+      if (promises.length >= MAX_FOLLOWUP_SLOTS) break;
+
+      // For today, skip times already in the past
+      if (isToday && hour * 60 + minute <= nowMinutes) continue;
+
+      const fireDate = new Date(date.getFullYear(), date.getMonth(), date.getDate(), hour, minute, 0);
 
       promises.push(
         Notifications.scheduleNotificationAsync({
-          identifier: `${NOTIFICATION_ID_FOLLOWUP_PREFIX}-${index}`,
+          identifier: `${NOTIFICATION_ID_FOLLOWUP_PREFIX}-${dateStr}-${index}`,
           content: {
             title: 'Trading Rules Check',
             body: "Did you follow your trading rules today? Don't forget to log!",
             sound: true,
             badge: 1,
-            data: { type: 'daily_reminder', scope: 'follow_up', index },
+            data: { type: 'daily_reminder', scope: 'follow_up', date: dateStr, index },
             ...(Platform.OS === 'android' && { channelId: 'reminders' }),
           },
           trigger: {
@@ -177,9 +197,6 @@ export async function scheduleReminders(
         })
       );
     }
-
-    totalMinutes += settings.interval;
-    index++;
   }
 
   await Promise.all(promises);

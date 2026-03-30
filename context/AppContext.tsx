@@ -112,7 +112,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     };
     await storage.saveDayLog(log);
     setLogs((prev) => ({ ...prev, [date]: log }));
-    if (date === formatDate(getCurrentDateET())) await cancelFollowUpReminders();
+    if (date === formatDate(getCurrentDateET())) await cancelFollowUpReminders(date);
     await reloadWidget();
   };
 
@@ -128,7 +128,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     };
     await storage.saveDayLog(log);
     setLogs((prev) => ({ ...prev, [date]: log }));
-    if (date === formatDate(getCurrentDateET())) await cancelFollowUpReminders();
+    if (date === formatDate(getCurrentDateET())) await cancelFollowUpReminders(date);
     await reloadWidget();
   };
 
@@ -149,7 +149,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     };
     await storage.saveDayLog(log);
     setLogs((prev) => ({ ...prev, [date]: log }));
-    if (date === formatDate(getCurrentDateET())) await cancelFollowUpReminders();
+    if (date === formatDate(getCurrentDateET())) await cancelFollowUpReminders(date);
     await reloadWidget();
   };
 
